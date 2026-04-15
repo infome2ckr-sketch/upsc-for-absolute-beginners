@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Playables SDK -->
+<script>// Playables SDK v1.0.0
+// Game lifecycle bridge: rAF-based game-ready detection + event communication
+(function() {
+  'use strict';
+
+  // Idempotency: skip if already initialized (e.g., server-side injection
+  // followed by client-side inject-javascript via the Bloks webview component).
+  if (window.playablesSDK) return;
+
+  var HANDLER_NAME = 'playablesGameEventHandler';
+  var ANDROID_BRIDGE_NAME = '_MetaPlayablesBridge';
+  var RAF_FRAME_THRESHOLD = 3;
+
+  var gameReadySent = false;
+  var firstInteractionSent = false;
+  var errorSent = false;
+  var frameCount = 0;
+  var originalRAF = window.requestAnimationFrame;
+
+  // --- Transport Layer ---
+
+  function hasIOSBridge() {
+    return !!(window.webkit &&
+              window.webkit.messageHandlers &&
+              window.webkit.messageHandlers[HANDLER_NAME]);
+  }
+
+  function hasAndroidBridge() {
+    return !!(window[ANDROID_BRIDGE_NAME] &&
+              typeof window[ANDROID_BRIDGE_NAME].postEvent === 'function');
+  }
+
+  function isInIframe() {
+    return !!(window.parent && window.parent !== window);
+  }
+
+  function sendEvent(eventName, payload) {
+    var message = {
+      type: eventName,
+      payload: payload || {},
+      timestamp: Date.now()
+    };
+
+    if (hasIOSBridge()) {
+      try {
+        window.webkit.messageHandlers[HANDLER_NAME].postMessage(message);
+      } catch (e) { /* ignore */ }
+      return;
+    }
+
+    if (hasAndroidBridge()) {
+    try {
+      var p = payload || {};
+      p.__secureToken = window.__fbAndroidBridgeAuthToken || '';
+      window[ANDROID_BRIDGE_NAME].postEvent(
+        eventName,
+        JSON.stringify(p)
+      );
+    } catch (e) { /* ignore */ }
+    return;
+  }
+
+    if (isInIframe()) {
+      try {
+        window.parent.postMessage(message, '*');
+      } catch (e) { /* ignore */ }
+      return;
+    }
+  }
+
+  // --- rAF Game-Ready Detection ---
+
+  function onFrame() {
+    if (gameReadySent) return;
+
+    frameCount++;
+    if (frameCount >= RAF_FRAME_THRESHOLD) {
+      gameReadySent = true;
+      sendEvent('game_ready', {
+        frame_count: frameCount,
+        detected_at: Date.now()
+      });
+      return;
+    }
+
+    originalRAF.call(window, onFrame);
+  }
+
+  if (originalRAF) {
+    window.requestAnimationFrame = function(callback) {
+      if (!gameReadySent) {
+        return originalRAF.call(window, function(timestamp) {
+          frameCount++;
+          if (frameCount >= RAF_FRAME_THRESHOLD && !gameReadySent) {
+            gameReadySent = true;
+            sendEvent('game_ready', {
+              frame_count: frameCount,
+              detected_at: Date.now()
+            });
+          }
+          callback(timestamp);
+        });
+      }
+      return originalRAF.call(window, callback);
+    };
+  }
+
+  // --- First User Interaction Detection ---
+
+  function setupFirstInteractionDetection() {
+    var events = ['touchstart', 'mousedown', 'keydown'];
+
+    function onFirstInteraction() {
+      if (firstInteractionSent) return;
+      firstInteractionSent = true;
+      sendEvent('user_interaction_start', null);
+
+      for (var i = 0; i < events.length; i++) {
+        document.removeEventListener(events[i], onFirstInteraction, true);
+      }
+    }
+
+    for (var i = 0; i < events.length; i++) {
+      document.addEventListener(events[i], onFirstInteraction, true);
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupFirstInteractionDetection);
+  } else {
+    setupFirstInteractionDetection();
+  }
+
+  // --- Auto Error Capture ---
+
+  window.addEventListener('error', function(event) {
+    if (errorSent) return;
+    errorSent = true;
+    sendEvent('error', {
+      message: event.message || 'Unknown error',
+      source: event.filename || '',
+      lineno: event.lineno || 0,
+      colno: event.colno || 0,
+      auto_captured: true
+    });
+  });
+
+  window.addEventListener('unhandledrejection', function(event) {
+    if (errorSent) return;
+    errorSent = true;
+    var reason = event.reason;
+    sendEvent('error', {
+      message: (reason instanceof Error) ? reason.message : String(reason),
+      type: 'unhandled_promise_rejection',
+      auto_captured: true
+    });
+  });
+
+  // --- Public API ---
+
+  window.playablesSDK = {
+    complete: function(score) {
+      sendEvent('game_ended', {
+        score: score,
+        completed: true
+      });
+    },
+
+    error: function(message) {
+      if (errorSent) return;
+      errorSent = true;
+      sendEvent('error', {
+        message: message || 'Unknown error',
+        auto_captured: false
+      });
+    },
+
+    sendEvent: function(eventName, payload) {
+      if (!eventName || typeof eventName !== 'string') return;
+      sendEvent(eventName, payload);
+    }
+  };
+
+  // Kick off rAF detection in case no game code calls rAF immediately
+  if (originalRAF) {
+    originalRAF.call(window, onFrame);
+  }
+})();</script>
+<script>window.Intl=window.Intl||{};Intl.t=function(s){return(Intl._locale&&Intl._locale[s])||s;};</script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UPSC Beginner Guide — Your Starter Kit</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+    html, body { height: 100%; background: #030308; }
+    body { color: #e8ecf3; font-family: 'Inter', system-ui, -apple-system, sans-serif; overscroll-behavior: none; }
+    h1, h2, h3, .syne { font-family: 'Syne', sans-serif; font-weight: 700; letter-spacing: -0.02em; }
+    ::-webkit-scrollbar { display: none; }
+
+    .blob { position: absolute; border-radius: 9999px; filter: blur(90px); opacity: 0.45; will-change: transform; }
+    .blob-1 { width: 420px; height: 420px; background: radial-gradient(circle at center, #7c3aed 0%, transparent 60%); top: -10%; left: -15%; animation: float1 28s ease-in-out infinite alternate; }
+    .blob-2 { width: 380px; height: 380px; background: radial-gradient(circle at center, #ec4899 0%, transparent 60%); bottom: -15%; right: -10%; animation: float2 32s ease-in-out infinite alternate; }
+    .blob-3 { width: 320px; height: 320px; background: radial-gradient(circle at center, #3b82f6 0%, transparent 60%); top: 40%; left: 60%; animation: float3 26s ease-in-out infinite alternate; }
+    @keyframes float1 { 0% { transform: translate(0,0) scale(1) rotate(0deg); } 100% { transform: translate(80px, 60px) scale(1.15) rotate(20deg); } }
+    @keyframes float2 { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(-100px, -80px) scale(1.1); } }
+    @keyframes float3 { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(60px, -100px) scale(0.9); } }
+
+    .section-content { opacity: 0; transform: translateY(24px); transition: opacity 0.9s cubic-bezier(0.2,0.8,0.2,1), transform 0.9s cubic-bezier(0.2,0.8,0.2,1); }
+    .section-content.visible { opacity: 1; transform: translateY(0); }
+  </style>
+</head>
+<body class="bg-[#030308] text-[#e8ecf3] selection:bg-violet-500/30 selection:text-white">
+  <!-- Progress -->
+  <div class="fixed top-0 left-0 right-0 z-[100] h-[2px] bg-white/5">
+    <div id="progress" class="h-full w-0 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-blue-500 transition-[width] duration-150 ease-out"></div>
+  </div>
+
+  <!-- Background -->
+  <div class="fixed inset-0 -z-10 overflow-hidden">
+    <div class="absolute inset-0 bg-[#030308]"></div>
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+    <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(124,58,237,0.1),_transparent_60%)]"></div>
+  </div>
+
+  <!-- Scroller -->
+  <main id="scroller" class="h-screen w-screen overflow-y-scroll snap-y snap-mandatory scroll-smooth">
+
+    <!-- 1 HERO -->
+    <section class="h-screen w-full snap-start flex items-center justify-center relative px-6">
+      <div class="max-w-3xl w-full text-center section-content">
+        <p class="text-[11px] md:text-xs uppercase tracking-[0.35em] text-white/40 mb-8">UPSC Beginner Guide • Part 2</p>
+        <h1 class="syne text-[clamp(48px,9vw,112px)] leading-[0.85] font-extrabold">Your Starter Kit</h1>
+        <p class="mt-8 text-xl md:text-2xl text-white/60 font-light">Coaching sells 50 books. You need 6.</p>
+        <div class="mt-16 flex justify-center">
+          <div class="w-6 h-10 rounded-full border border-white/15 flex justify-center p-1">
+            <div class="w-1 h-2 bg-white/40 rounded-full animate-bounce"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2 INTRO -->
+    <section class="h-screen w-full snap-start flex items-center justify-center relative px-6">
+      <div class="max-w-3xl w-full text-center section-content">
+        <p class="text-2xl md:text-[40px] leading-[1.3] md:leading-[1.25] font-light tracking-tight">
+          Total cost ~₹2,500 <span class="text-white/40">(less second-hand)</span>. Don't buy optional books yet. <span class="text-white font-medium">Depth > breadth.</span>
+        </p>
+      </div>
+    </section>
+
+    <!-- 3 ITEM 01 -->
+    <section class="h-screen w-full snap-start flex items-center justify-center relative px-6">
+      <div class="max-w-3xl w-full section-content">
+        <div class="text-[64px] md:text-[88px] text-white/12 mb-6 leading-none syne font-semibold">01</div>
+        <h2 class="syne text-4xl md:text-6xl mb-6">Print the Syllabus</h2>
+        <p class="text-lg md:text-xl text-white/70 leading-relaxed max-w-2xl">This is your GPS. Every question comes from here. Stick it above your desk. Read 2 mins daily.</p>
+      </div>
+    </section>
+
+    <!-- 4 ITEM 02 -->
+    <section class="h-screen w-full snap-start flex items-center justify-center relative px-6">
+      <div class="max-w-3xl w-full section-content">
+        <div class="text-[64px] md:text-[88px] text-white/12 mb-6 leading-none syne font-semibold">02</div>
+        <h2 class="syne text-4xl md:text-6xl mb-6">Last 10 Years PYQs</h2>
+        <p class="text-lg md:text-xl text-white/70 leading-relaxed max-w-2xl">Download Prelims + Mains papers. Don't solve yet. Read 1 Prelims paper today. Notice the shift to 'how many pairs' format.</p>
+      </div>
+    </section>
+
+    <!-- 5 ITEM 03 -->
+    <section class="h-screen w-full snap-start flex items-center justify-center relative px-6">
+      <div class="max-w-3xl w-full section-content">
+        <div class="text-[64px] md:text-[88px] text-white/12 mb-6 leading-none syne font-semibold">03</div>
+        <h2 class="syne text-4xl md:text-6xl mb-6">M. Laxmikanth Polity (7th)</h2>
+        <p class="text-lg md:text-xl text-white/70 leading-relaxed max-w-2xl">Covers ~15% Prelims + most of GS2 Mains. Start Chapter 1: Historical Background.</p>
+      </div>
+    </section>
+
+    <!-- 6 ITEM 04 -->
+    <section class="h-screen w-full snap-start flex items-center justify-center relative px-6">
+      <div class="max-w-3xl w-full section-content">
+        <div class="text-[64px] md:text-[88px] text-white/12 mb-6 leading-none syne font-semibold">04</div>
+        <h2 class="syne text-4xl md:text-6xl mb-6">History NCERT + Spectrum</h2>
+        <p class="text-lg md:text-xl text-white/70 leading-relaxed max-w-2xl">NCERT Class 12 Themes Part 1-3 + Spectrum Modern India. Start 10 pages/day from Themes Part 1.</p>
+      </div>
+    </section>
+
+    <!-- 7 ITEM 05 -->
+    <section class="h-screen w-full snap-start flex items-center justify-center relative px-6">
+      <div class="max-w-3xl w-full section-content">
+        <div class="text-[64px] md:text-[88px] text-white/12 mb-6 leading-none syne font-semibold">05</div>
+        <h2 class="syne text-4xl md:text-6xl mb-6">Geography NCERT + GC Leong</h2>
+        <p class="text-lg md:text-xl text-white/70 leading-relaxed max-w-2xl">Class 11 Fundamentals of Physical Geography + GC Leong. Begin with Class 11 Chapter 2.</p>
+      </div>
+    </section>
+
+    <!-- 8 ITEM 06 -->
+    <section class="h-screen w-full snap-start flex items-center justify-center relative px-6">
+      <div class="max-w-3xl w-full section-content">
+        <div class="text-[64px] md:text-[88px] text-white/12 mb-6 leading-none syne font-semibold">06</div>
+        <h2 class="syne text-4xl md:text-6xl mb-6">Current Affairs</h2>
+        <p class="text-lg md:text-xl text-white/70 leading-relaxed max-w-2xl">The Hindu OR Indian Express + 1 monthly compilation (Vision/Insights). Today: front page + 1 editorial only.</p>
+      </div>
+    </section>
+
+    <!-- 9 TRANSITION -->
+    <section class="h-screen w-full snap-start flex items-center justify-center relative px-6">
+      <div class="max-w-3xl w-full text-center section-content">
+        <p class="text-[11px] md:text-xs uppercase tracking-[0.35em] text-white/40 mb-8">Transition</p>
+        <h2 class="syne text-5xl md:text-7xl lg:text-8xl font-extrabold">Foundation Month</h2>
+        <p class="mt-6 text-xl md:text-2xl text-white/60">Your first 30-day plan</p>
+      </div>
+    </section>
+
+    <!-- 10 GOAL -->
+    <section class="h-screen w-full snap-start flex items-center justify-center relative px-6">
+      <div class="max-w-3xl w-full text-center section-content">
+        <p class="text-2xl md:text-[40px] leading-[1.3] font-light">Goal is not to finish syllabus. Goal is to <span class="text-white">kill fear</span> and <span class="text-white">build habit.</span></p>
+      </div>
+    </section>
+
+    <!-- 11 DAILY ROUTINE -->
+    <section class="h-screen w-full snap-start flex items-center justify-center relative px-6 py-10">
+      <div class="max-w-3xl w-full section-content">
+        <h2 class="syne text-3xl md:text-5xl mb-10 text-center">4-Hour Daily Routine</h2>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div class="group relative bg-white/[0.03] border border-white/10 rounded-[24px] p-6 backdrop-blur-xl hover:bg-white/[0.05] transition-all">
+            <div class="text-[10px] uppercase tracking-[0.2em] text-violet-300/70 mb-3">Hour 1</div>
+            <h3 class="syne text-xl mb-2">Newspaper (60m)</h3>
+            <p class="text-white/60 text-sm leading-relaxed">syllabus-linked news, 1 editorial, 1 international. Max 5 bullets.</p>
+          </div>
+          <div class="group relative bg-white/[0.03] border border-white/10 rounded-[24px] p-6 backdrop-blur-xl hover:bg-white/[0.05] transition-all">
+            <div class="text-[10px] uppercase tracking-[0.2em] text-fuchsia-300/70 mb-3">Hour 2-3</div>
+            <h3 class="syne text-xl mb-2">Static (120m)</h3>
+            <p class="text-white/60 text-sm leading-relaxed">Week 1-2 Polity Laxmikanth Ch 1-10 (8 pages/day, read twice). Week 3-4 History NCERT (10 pages/day).</p>
+          </div>
+          <div class="group relative bg-white/[0.03] border border-white/10 rounded-[24px] p-6 backdrop-blur-xl hover:bg-white/[0.05] transition-all">
+            <div class="text-[10px] uppercase tracking-[0.2em] text-blue-300/70 mb-3">Hour 4a</div>
+            <h3 class="syne text-xl mb-2">Revision (30m)</h3>
+            <p class="text-white/60 text-sm leading-relaxed">revise yesterday.</p>
+          </div>
+          <div class="group relative bg-white/[0.03] border border-white/10 rounded-[24px] p-6 backdrop-blur-xl hover:bg-white/[0.05] transition-all">
+            <div class="text-[10px] uppercase tracking-[0.2em] text-emerald-300/70 mb-3">Hour 4b</div>
+            <h3 class="syne text-xl mb-2">PYQs (30m)</h3>
+            <p class="text-white/60 text-sm leading-relaxed">2 questions from today's chapter. Expect to get wrong.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 12 RULE -->
+    <section class="h-screen w-full snap-start flex items-center justify-center relative px-6">
+      <div class="max-w-3xl w-full section-content">
+        <h2 class="syne text-4xl md:text-6xl mb-6">Active Recall</h2>
+        <p class="text-lg md:text-xl text-white/70 leading-relaxed max-w-2xl">After every chapter, close book, write 5 points you remember.</p>
+      </div>
+    </section>
+
+    <!-- 13 WEEKEND -->
+    <section class="h-screen w-full snap-start flex items-center justify-center relative px-6">
+      <div class="max-w-3xl w-full section-content">
+        <h2 class="syne text-4xl md:text-6xl mb-6">Weekends</h2>
+        <p class="text-lg md:text-xl text-white/70 leading-relaxed max-w-2xl">1 sectional Prelims test (Polity/History) from any free site.</p>
+      </div>
+    </section>
+
+    <!-- 14 ZERO DAYS -->
+    <section class="h-screen w-full snap-start flex items-center justify-center relative px-6">
+      <div class="max-w-3xl w-full text-center section-content">
+        <h2 class="syne text-4xl md:text-6xl mb-6">Zero Days Policy</h2>
+        <p class="text-lg md:text-xl text-white/70 leading-relaxed max-w-2xl mx-auto mb-12">Even if sick, read 1 page. Keep the chain unbroken.</p>
+        <div class="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.3em] text-white/30">
+          <span class="w-8 h-[1px] bg-white/20"></span>
+          Part 2 Complete
+          <span class="w-8 h-[1px] bg-white/20"></span>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    const scroller = document.getElementById('scroller');
+    const progress = document.getElementById('progress');
+    const sections = document.querySelectorAll('.section-content');
+
+    scroller.addEventListener('scroll', () => {
+      const max = scroller.scrollHeight - scroller.clientHeight;
+      const p = max > 0 ? (scroller.scrollTop / max) * 100 : 0;
+      progress.style.width = p + '%';
+    });
+
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) e.target.classList.add('visible');
+      });
+    }, { root: scroller, threshold: 0.5 });
+
+    sections.forEach(s => io.observe(s));
+    // show first immediately
+    setTimeout(() => sections[0]?.classList.add('visible'), 100);
+  </script>
+</body>
+</html>
