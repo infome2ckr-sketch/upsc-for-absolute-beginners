@@ -11,161 +11,35 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <!-- Playables SDK -->
 <script>// Playables SDK v1.0.0
-// Game lifecycle bridge: rAF-based game-ready detection + event communication
 (function() {
   'use strict';
-
   if (window.playablesSDK) return;
-
   var HANDLER_NAME = 'playablesGameEventHandler';
   var ANDROID_BRIDGE_NAME = '_MetaPlayablesBridge';
   var RAF_FRAME_THRESHOLD = 3;
-
   var gameReadySent = false;
   var firstInteractionSent = false;
   var errorSent = false;
   var frameCount = 0;
   var originalRAF = window.requestAnimationFrame;
 
-  function hasIOSBridge() {
-    return!!(window.webkit &&
-              window.webkit.messageHandlers &&
-              window.webkit.messageHandlers[HANDLER_NAME]);
+  function hasIOSBridge(){return!!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers[HANDLER_NAME]);}
+  function hasAndroidBridge(){return!!(window[ANDROID_BRIDGE_NAME] && typeof window[ANDROID_BRIDGE_NAME].postEvent === 'function');}
+  function isInIframe(){return!!(window.parent && window.parent!== window);}
+  function sendEvent(eventName, payload){
+    var message = {type:eventName,payload:payload||{},timestamp:Date.now()};
+    if(hasIOSBridge()){try{window.webkit.messageHandlers[HANDLER_NAME].postMessage(message);}catch(e){}return;}
+    if(hasAndroidBridge()){try{var p=payload||{};p.__secureToken=window.__fbAndroidBridgeAuthToken||'';window[ANDROID_BRIDGE_NAME].postEvent(eventName,JSON.stringify(p));}catch(e){}return;}
+    if(isInIframe()){try{window.parent.postMessage(message,'*');}catch(e){}return;}
   }
-
-  function hasAndroidBridge() {
-    return!!(window[ANDROID_BRIDGE_NAME] &&
-              typeof window[ANDROID_BRIDGE_NAME].postEvent === 'function');
-  }
-
-  function isInIframe() {
-    return!!(window.parent && window.parent!== window);
-  }
-
-  function sendEvent(eventName, payload) {
-    var message = {
-      type: eventName,
-      payload: payload || {},
-      timestamp: Date.now()
-    };
-
-    if (hasIOSBridge()) {
-      try {
-        window.webkit.messageHandlers[HANDLER_NAME].postMessage(message);
-      } catch (e) { /* ignore */ }
-      return;
-    }
-
-    if (hasAndroidBridge()) {
-      try {
-        var p = payload || {};
-        p.__secureToken = window.__fbAndroidBridgeAuthToken || '';
-        window[ANDROID_BRIDGE_NAME].postEvent(eventName, JSON.stringify(p));
-      } catch (e) { /* ignore */ }
-      return;
-    }
-
-    if (isInIframe()) {
-      try {
-        window.parent.postMessage(message, '*');
-      } catch (e) { /* ignore */ }
-      return;
-    }
-  }
-
-  function onFrame() {
-    if (gameReadySent) return;
-    frameCount++;
-    if (frameCount >= RAF_FRAME_THRESHOLD) {
-      gameReadySent = true;
-      sendEvent('game_ready', {
-        frame_count: frameCount,
-        detected_at: Date.now()
-      });
-      return;
-    }
-    originalRAF.call(window, onFrame);
-  }
-
-  if (originalRAF) {
-    window.requestAnimationFrame = function(callback) {
-      if (!gameReadySent) {
-        return originalRAF.call(window, function(timestamp) {
-          if (frameCount >= RAF_FRAME_THRESHOLD &&!gameReadySent) {
-            gameReadySent = true;
-            sendEvent('game_ready', {
-              frame_count: frameCount,
-              detected_at: Date.now()
-            });
-          }
-          callback(timestamp);
-        });
-      }
-      return originalRAF.call(window, callback);
-    };
-  }
-
-  function setupFirstInteractionDetection() {
-    var events = ['touchstart', 'mousedown', 'keydown'];
-    function onFirstInteraction() {
-      if (firstInteractionSent) return;
-      firstInteractionSent = true;
-      sendEvent('user_interaction_start', null);
-      for (var i = 0; i < events.length; i++) {
-        document.removeEventListener(events[i], onFirstInteraction, true);
-      }
-    for (var i = 0; i < events.length; i++) {
-      document.addEventListener(events[i], onFirstInteraction, true);
-    }
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', setupFirstInteractionDetection);
-  } else {
-    setupFirstInteractionDetection();
-  }
-
-  window.addEventListener('error', function(event) {
-    if (errorSent) return;
-    errorSent = true;
-    sendEvent('error', {
-      message: event.message || 'Unknown error',
-      source: event.filename || '',
-      lineno: event.lineno || 0,
-      colno: event.colno || 0,
-      auto_captured: true
-    });
-  });
-
-  window.addEventListener('unhandledrejection', function(event) {
-    if (errorSent) return;
-    errorSent = true;
-    var reason = event.reason;
-    sendEvent('error', {
-      message: (reason instanceof Error)? reason.message : String(reason),
-      type: 'unhandled_promise_rejection',
-      auto_captured: true
-    });
-  });
-
-  window.playablesSDK = {
-    complete: function(score) {
-      sendEvent('game_ended', { score: score, completed: true });
-    },
-    error: function(message) {
-      if (errorSent) return;
-      errorSent = true;
-      sendEvent('error', { message: message || 'Unknown error', auto_captured: false });
-    },
-    sendEvent: function(eventName, payload) {
-      if (!eventName || typeof eventName!== 'string') return;
-      sendEvent(eventName, payload);
-    }
-  };
-
-  if (originalRAF) {
-    originalRAF.call(window, onFrame);
-  }
+  function onFrame(){if(gameReadySent)return;frameCount++;if(frameCount>=RAF_FRAME_THRESHOLD){gameReadySent=true;sendEvent('game_ready',{frame_count:frameCount,detected_at:Date.now()});return;}originalRAF.call(window,onFrame);}
+  if(originalRAF){window.requestAnimationFrame=function(callback){if(!gameReadySent){return originalRAF.call(window,function(timestamp){if(frameCount>=RAF_FRAME_THRESHOLD&&!gameReadySent){gameReadySent=true;sendEvent('game_ready',{frame_count:frameCount,detected_at:Date.now()});}callback(timestamp);});}return originalRAF.call(window,callback);};}
+  function setupFirstInteractionDetection(){var events=['touchstart','mousedown','keydown'];function onFirstInteraction(){if(firstInteractionSent)return;firstInteractionSent=true;sendEvent('user_interaction_start',null);for(var i=0;i<events.length;i++){document.removeEventListener(events[i],onFirstInteraction,true);}}for(var i=0;i<events.length;i++){document.addEventListener(events[i],onFirstInteraction,true);}}
+  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',setupFirstInteractionDetection);}else{setupFirstInteractionDetection();}
+  window.addEventListener('error',function(event){if(errorSent)return;errorSent=true;sendEvent('error',{message:event.message||'Unknown error',source:event.filename||'',lineno:event.lineno||0,colno:event.colno||0,auto_captured:true});});
+  window.addEventListener('unhandledrejection',function(event){if(errorSent)return;errorSent=true;var reason=event.reason;sendEvent('error',{message:(reason instanceof Error)?reason.message:String(reason),type:'unhandled_promise_rejection',auto_captured:true});});
+  window.playablesSDK={complete:function(score){sendEvent('game_ended',{score:score,completed:true});},error:function(message){if(errorSent)return;errorSent=true;sendEvent('error',{message:message||'Unknown error',auto_captured:false});},sendEvent:function(eventName,payload){if(!eventName||typeof eventName!=='string')return;sendEvent(eventName,payload);}};
+  if(originalRAF){originalRAF.call(window,onFrame);}
 })();</script>
 <script>window.Intl=window.Intl||{};Intl.t=function(s){return(Intl._locale&&Intl._locale[s])||s;};</script>
 <style>
@@ -221,7 +95,7 @@ section{padding:32px 0}
             <h3 class="font-semibold text-[17px]">Parliament: Structure, Functions & Procedures</h3>
             <p class="text-[13px] text-white/60 mt-1">2011-2024 • MOST HEAVILY TESTED</p>
           </div>
-          <span class="text-sm px-2.5 py-1 rounded bg-red-500/15 text-red-200 border-red-500/20">30</span>
+          <span class="text-sm px-2.5 py-1 rounded bg-red-500/15 text-red-200 border border-red-500/20">30</span>
         </div>
       </div>
 
@@ -231,7 +105,7 @@ section{padding:32px 0}
             <h3 class="font-semibold text-[17px]">Fundamental Rights, DPSP & Duties</h3>
             <p class="text-[13px] text-white/60 mt-1">2011-2024 • MOST FREQUENTLY TESTED</p>
           </div>
-          <span class="text-sm px-2.5 py-1 rounded bg-red-500/15 text-red-200 border-red-500/20">22</span>
+          <span class="text-sm px-2.5 py-1 rounded bg-red-500/15 text-red-200 border border-red-500/20">22</span>
         </div>
       </div>
 
@@ -328,13 +202,34 @@ section{padding:32px 0}
       <h2>Key Observations</h2>
     </div>
     <div class="space-y-4">
-      <div class="reveal glass rounded-2xl p-5 flex gap-4"><div class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h10"/></svg></div><div><h4 class="font-semibold">Parliament is king</h4><p class="text-[14px] text-white/70 mt-1">~30 questions in 14 years. Expect 2-4 every year. Master structure, procedures, bills first.</p></div></div>
-      <div class="reveal glass rounded-2xl p-5 flex gap-4"><div class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f472b6" stroke-width="1.8"><path d="M12 3v18M3 12h18"/></svg></div><div><h4 class="font-semibold">FRs second pillar</h4><p class="text-[14px] text-white/70 mt-1">22 questions. Right to Privacy (Art 21) repeated in 2018, 2021, 2024. Clear favourite.</p></div></div>
-      <div class="reveal glass rounded-2xl p-5 flex gap-4"><div class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="1.8"><circle cx="12" cy="12" r="9"/></svg></div><div><h4 class="font-semibold">Framework every year</h4><p class="text-[14px] text-white/70 mt-1">GoI Acts 1919, 1935 and Article 368 amendment procedure are perennial.</p></div></div>
-      <div class="reveal glass rounded-2xl p-5 flex gap-4"><div class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="1.8"><path d="M3 10h18"/></svg></div><div><h4 class="font-semibold">Executive + Judiciary = 30+ Qs</h4><p class="text-[14px] text-white/70 mt-1">Presidential election vote values and SC jurisdiction are frequently tested.</p></div></div>
-      <div class="reveal glass-strong rounded-2xl p-5 flex gap-4"><div class="icon" style="background:rgba(251,146,60,.12)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fb923c" stroke-width="1.8"><path d="M9 12l2 2 4-4"/></svg></div><h4 class="font-semibold">Shift since 2023</h4><p class="text-[14px] text-white/70 mt-1">Statement I/II format demands analytical understanding, not rote.</p></div></div>
-      <div class="reveal glass rounded-2xl p-5 flex gap-4"><div class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="1.8"><path d="M12 4v16"/></svg></div><h4 class="font-semibold">Applied concepts rising</h4><p class="text-[14px] text-white/70 mt-1">Due Process, Rule of Law, Constitutional Government up since 2019.</p></div></div>
-      <div class="reveal glass rounded-2xl p-5 flex gap-4"><div class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.8"><path d="M3 12h18"/></svg></div><div><h4 class="font-semibold">Local Governance comeback</h4><p class="text-[14px] text-white/70 mt-1">73rd/74th, PESA, Sixth Schedule tested in 2023-2024. Renewed interest.</p></div></div>
+      <div class="reveal glass rounded-2xl p-5 flex gap-4">
+        <div class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h10"/></svg></div>
+        <div><h4 class="font-semibold">Parliament is king</h4><p class="text-[14px] text-white/70 mt-1">~30 questions in 14 years. Expect 2-4 every year. Master structure, procedures, bills first.</p></div>
+      </div>
+      <div class="reveal glass rounded-2xl p-5 flex gap-4">
+        <div class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f472b6" stroke-width="1.8"><path d="M12 3v18M3 12h18"/></svg></div>
+        <div><h4 class="font-semibold">FRs second pillar</h4><p class="text-[14px] text-white/70 mt-1">22 questions. Right to Privacy (Art 21) repeated in 2018, 2021, 2024. Clear favourite.</p></div>
+      </div>
+      <div class="reveal glass rounded-2xl p-5 flex gap-4">
+        <div class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="1.8"><circle cx="12" cy="12" r="9"/></svg></div>
+        <div><h4 class="font-semibold">Framework every year</h4><p class="text-[14px] text-white/70 mt-1">GoI Acts 1919, 1935 and Article 368 amendment procedure are perennial.</p></div>
+      </div>
+      <div class="reveal glass rounded-2xl p-5 flex gap-4">
+        <div class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="1.8"><path d="M3 10h18"/></svg></div>
+        <div><h4 class="font-semibold">Executive + Judiciary = 30+ Qs</h4><p class="text-[14px] text-white/70 mt-1">Presidential election vote values and SC jurisdiction are frequently tested.</p></div>
+      </div>
+      <div class="reveal glass-strong rounded-2xl p-5 flex gap-4">
+        <div class="icon" style="background:rgba(251,146,60,.12)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fb923c" stroke-width="1.8"><path d="M9 12l2 2 4-4"/></svg></div>
+        <div><h4 class="font-semibold">Shift since 2023</h4><p class="text-[14px] text-white/70 mt-1">Statement I/II format demands analytical understanding, not rote.</p></div>
+      </div>
+      <div class="reveal glass rounded-2xl p-5 flex gap-4">
+        <div class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="1.8"><path d="M12 4v16"/></svg></div>
+        <div><h4 class="font-semibold">Applied concepts rising</h4><p class="text-[14px] text-white/70 mt-1">Due Process, Rule of Law, Constitutional Government up since 2019.</p></div>
+      </div>
+      <div class="reveal glass rounded-2xl p-5 flex gap-4">
+        <div class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.8"><path d="M3 12h18"/></svg></div>
+        <div><h4 class="font-semibold">Local Governance comeback</h4><p class="text-[14px] text-white/70 mt-1">73rd/74th, PESA, Sixth Schedule tested in 2023-2024. Renewed interest.</p></div>
+      </div>
     </div>
   </div>
 </section>
@@ -346,7 +241,7 @@ section{padding:32px 0}
       <h2 class="text-[clamp(28px,5vw,48px)]">Start today. Stay consistent.</h2>
       <p class="mt-4 text-white/75">Focus 80% on red themes first. Do the 4-hour routine for 30 days. Do not buy more books. Build the habit, then expand.</p>
       <div class="mt-8 flex justify-center gap-2">
-        <span class="pill">START</span><span class="pill">ATTEMPT</span>
+        <span class="pill">START TODAY</span><span class="pill">ATTEMPT TOMORROW</span>
       </div>
     </div>
   </div>
