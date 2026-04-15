@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Playables SDK -->
+<script>// Playables SDK v1.0.0
+// Game lifecycle bridge: rAF-based game-ready detection + event communication
+(function() {
+  'use strict';
+
+  // Idempotency: skip if already initialized (e.g., server-side injection
+  // followed by client-side inject-javascript via the Bloks webview component).
+  if (window.playablesSDK) return;
+
+  var HANDLER_NAME = 'playablesGameEventHandler';
+  var ANDROID_BRIDGE_NAME = '_MetaPlayablesBridge';
+  var RAF_FRAME_THRESHOLD = 3;
+
+  var gameReadySent = false;
+  var firstInteractionSent = false;
+  var errorSent = false;
+  var frameCount = 0;
+  var originalRAF = window.requestAnimationFrame;
+
+  // --- Transport Layer ---
+
+  function hasIOSBridge() {
+    return !!(window.webkit &&
+              window.webkit.messageHandlers &&
+              window.webkit.messageHandlers[HANDLER_NAME]);
+  }
+
+  function hasAndroidBridge() {
+    return !!(window[ANDROID_BRIDGE_NAME] &&
+              typeof window[ANDROID_BRIDGE_NAME].postEvent === 'function');
+  }
+
+  function isInIframe() {
+    return !!(window.parent && window.parent !== window);
+  }
+
+  function sendEvent(eventName, payload) {
+    var message = {
+      type: eventName,
+      payload: payload || {},
+      timestamp: Date.now()
+    };
+
+    if (hasIOSBridge()) {
+      try {
+        window.webkit.messageHandlers[HANDLER_NAME].postMessage(message);
+      } catch (e) { /* ignore */ }
+      return;
+    }
+
+    if (hasAndroidBridge()) {
+    try {
+      var p = payload || {};
+      p.__secureToken = window.__fbAndroidBridgeAuthToken || '';
+      window[ANDROID_BRIDGE_NAME].postEvent(
+        eventName,
+        JSON.stringify(p)
+      );
+    } catch (e) { /* ignore */ }
+    return;
+  }
+
+    if (isInIframe()) {
+      try {
+        window.parent.postMessage(message, '*');
+      } catch (e) { /* ignore */ }
+      return;
+    }
+  }
+
+  // --- rAF Game-Ready Detection ---
+
+  function onFrame() {
+    if (gameReadySent) return;
+
+    frameCount++;
+    if (frameCount >= RAF_FRAME_THRESHOLD) {
+      gameReadySent = true;
+      sendEvent('game_ready', {
+        frame_count: frameCount,
+        detected_at: Date.now()
+      });
+      return;
+    }
+
+    originalRAF.call(window, onFrame);
+  }
+
+  if (originalRAF) {
+    window.requestAnimationFrame = function(callback) {
+      if (!gameReadySent) {
+        return originalRAF.call(window, function(timestamp) {
+          frameCount++;
+          if (frameCount >= RAF_FRAME_THRESHOLD && !gameReadySent) {
+            gameReadySent = true;
+            sendEvent('game_ready', {
+              frame_count: frameCount,
+              detected_at: Date.now()
+            });
+          }
+          callback(timestamp);
+        });
+      }
+      return originalRAF.call(window, callback);
+    };
+  }
+
+  // --- First User Interaction Detection ---
+
+  function setupFirstInteractionDetection() {
+    var events = ['touchstart', 'mousedown', 'keydown'];
+
+    function onFirstInteraction() {
+      if (firstInteractionSent) return;
+      firstInteractionSent = true;
+      sendEvent('user_interaction_start', null);
+
+      for (var i = 0; i < events.length; i++) {
+        document.removeEventListener(events[i], onFirstInteraction, true);
+      }
+    }
+
+    for (var i = 0; i < events.length; i++) {
+      document.addEventListener(events[i], onFirstInteraction, true);
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupFirstInteractionDetection);
+  } else {
+    setupFirstInteractionDetection();
+  }
+
+  // --- Auto Error Capture ---
+
+  window.addEventListener('error', function(event) {
+    if (errorSent) return;
+    errorSent = true;
+    sendEvent('error', {
+      message: event.message || 'Unknown error',
+      source: event.filename || '',
+      lineno: event.lineno || 0,
+      colno: event.colno || 0,
+      auto_captured: true
+    });
+  });
+
+  window.addEventListener('unhandledrejection', function(event) {
+    if (errorSent) return;
+    errorSent = true;
+    var reason = event.reason;
+    sendEvent('error', {
+      message: (reason instanceof Error) ? reason.message : String(reason),
+      type: 'unhandled_promise_rejection',
+      auto_captured: true
+    });
+  });
+
+  // --- Public API ---
+
+  window.playablesSDK = {
+    complete: function(score) {
+      sendEvent('game_ended', {
+        score: score,
+        completed: true
+      });
+    },
+
+    error: function(message) {
+      if (errorSent) return;
+      errorSent = true;
+      sendEvent('error', {
+        message: message || 'Unknown error',
+        auto_captured: false
+      });
+    },
+
+    sendEvent: function(eventName, payload) {
+      if (!eventName || typeof eventName !== 'string') return;
+      sendEvent(eventName, payload);
+    }
+  };
+
+  // Kick off rAF detection in case no game code calls rAF immediately
+  if (originalRAF) {
+    originalRAF.call(window, onFrame);
+  }
+})();</script>
+<script>window.Intl=window.Intl||{};Intl.t=function(s){return(Intl._locale&&Intl._locale[s])||s;};</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#030308">
+<title>UPSC Polity — Theme Frequency Ranking</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+:root{--bg:#030308;--text:#e8ecf3;}
+html,body{height:100%;background:var(--bg);color:var(--text);overscroll-behavior:none;overflow-x:hidden}
+body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;-webkit-tap-highlight-color:transparent;touch-action:pan-y;word-break:break-word}
+h1,h2,h3{font-family:Syne,Inter,sans-serif;font-weight:800;letter-spacing:-0.02em}
+*::selection{background:rgba(139,92,246,.3)}
+img,svg{max-width:100%;height:auto}
+*{box-sizing:border-box}
+#scroll{height:100svh;height:100dvh;overflow-y:scroll;overflow-x:hidden;scroll-snap-type:y mandatory;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}
+section{scroll-snap-align:start;scroll-snap-stop:always;min-height:100svh;min-height:100dvh;position:relative;display:flex;align-items:center;justify-content:center;padding:clamp(20px,5vw,64px);padding-top:calc(clamp(20px,5vw,64px) + env(safe-area-inset-top));padding-bottom:calc(clamp(20px,5vw,64px) + env(safe-area-inset-bottom))}
+#progress{transform-origin:left;will-change:transform}
+.blobs{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;filter:saturate(110%)}
+.blob{position:absolute;width:60vmax;height:60vmax;border-radius:50%;filter:blur(90px);opacity:.35;mix-blend-mode:screen}
+.b1{left:-15%;top:-20%;background:radial-gradient(closest-side,#7c3aed,transparent 70%);animation:blob1 28s ease-in-out infinite}
+.b2{right:-20%;top:10%;background:radial-gradient(closest-side,#ec4899,transparent 70%);animation:blob2 32s ease-in-out infinite}
+.b3{left:10%;bottom:-25%;background:radial-gradient(closest-side,#3b82f6,transparent 70%);animation:blob3 30s ease-in-out infinite}
+@keyframes blob1{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(5%,8%) scale(1.1)}66%{transform:translate(-4%,-3%) scale(0.95)}}
+@keyframes blob2{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(-8%,5%) scale(1.05)}66%{transform:translate(3%,-6%) scale(0.98)}}
+@keyframes blob3{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(6%,-4%) scale(1.08)}66%{transform:translate(-5%,7%) scale(0.96)}}
+.glass{background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02));backdrop-filter:blur(20px) saturate(120%);-webkit-backdrop-filter:blur(20px) saturate(120%);border:1px solid rgba(255,255,255,.09);box-shadow:0 10px 40px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.06)}
+.glass-strong{background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.03));backdrop-filter:blur(24px) saturate(140%);-webkit-backdrop-filter:blur(24px) saturate(140%);border:1px solid rgba(255,255,255,.14)}
+.pill{display:inline-flex;align-items:center;gap:.5rem;padding:.55rem .9rem;border-radius:999px;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(232,236,243,.85);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(8px)}
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .9s cubic-bezier(.2,.8,.2,1),transform .9s cubic-bezier(.2,.8,.2,1)}
+.reveal.in{opacity:1;transform:none}
+.type-caret::after{content:"";display:inline-block;width:2px;height:1.1em;background:currentColor;margin-left:3px;transform:translateY(2px);animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.watermark{writing-mode:vertical-rl;transform:rotate(180deg);letter-spacing:.38em}
+.num{font-family:Syne,sans-serif;font-weight:800;line-height:.9}
+.priority-red{border-left:4px solid #ef4444}
+.priority-yellow{border-left:4px solid #eab308}
+.priority-blue{border-left:4px solid #3b82f6}
+@media (max-width:768px){
+  html{-webkit-text-size-adjust:100%}
+  .blob{width:50vmax;height:50vmax;filter:blur(60px);opacity:.28}
+  .glass,.glass-strong{backdrop-filter:blur(14px) saturate(110%);-webkit-backdrop-filter:blur(14px) saturate(110%)}
+  section{padding-left:20px;padding-right:20px;align-items:flex-start;min-height:100dvh}
+  h1{font-size:clamp(36px,10vw,64px)!important;line-height:1.05}
+  h2{font-size:clamp(28px,7vw,44px)!important}
+  .pill{font-size:.7rem;padding:.6rem .9rem;min-height:44px}
+  p{line-height:1.65}
+}
+@media (max-width:480px){
+  .blob{filter:blur(40px);opacity:.22}
+  section{padding-left:16px;padding-right:16px;padding-top:28px;padding-bottom:28px}
+  .glass,.glass-strong{border-radius:20px}
+}
+</style>
+</head>
+<body class="relative">
+<div class="blobs" aria-hidden="true"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+<div id="progress" class="fixed top-0 left-0 right-0 h-[2px] z-[100] bg-gradient-to-r from-violet-500 via-fuchsia-500 to-blue-500 scale-x-0" style="top:env(safe-area-inset-top)"></div>
+<div class="watermark hidden lg:block fixed left-6 top-1/2 -translate-y-1/2 text-[11px] text-white/15 z-10 select-none">POLITY THEMES</div>
+<main id="scroll">
+
+<section>
+  <div class="relative z-10 w-full max-w-6xl mx-auto text-center">
+    <div class="reveal">
+      <span class="pill">PART 2B</span>
+      <h1 class="mt-6 text-[clamp(44px,9vw,112px)] leading-[0.85]">Theme-Wise <span class="bg-gradient-to-r from-violet-300 via-fuchsia-300 to-blue-300 bg-clip-text text-transparent">Frequency</span></h1>
+      <p class="mt-6 text-[clamp(16px,2.2vw,22px)] text-[#e8ecf3]/75">Polity PYQs ranked by total question count 2011 to 2024</p>
+      <div class="mt-10 flex flex-wrap justify-center gap-2.5">
+        <span class="pill" style="border-color:rgba(239,68,68,.4)">RED = Highest Priority</span>
+        <span class="pill" style="border-color:rgba(234,179,8,.4)">YELLOW = High Priority</span>
+        <span class="pill" style="border-color:rgba(59,130,246,.4)">BLUE = Moderate</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="relative z-10 w-full max-w-5xl mx-auto px-2">
+    <div class="reveal text-center mb-8">
+      <h2 class="text-[clamp(32px,5vw,56px)]">Top 10 Polity Themes</h2>
+      <p class="mt-3 text-[#e8ecf3]/70">Red themes alone cover over 60 percent of all Polity questions</p>
+    </div>
+    <div class="space-y-4">
+
+      <div class="reveal glass priority-red rounded-[20px] p-[1px]"><div class="rounded-[19px] bg-black/30 p-5 md:p-6 flex items-start gap-4">
+        <div class="num text-[42px] md:text-[56px] text-white/15 leading-none w-14 text-center">3</div>
+        <div class="flex-1"><div class="flex items-baseline justify-between gap-3 flex-wrap"><h3 class="text-[19px] md:text-[22px]">Parliament: Structure, Functions & Procedures</h3><span class="text-[13px] px-2 py-1 rounded bg-red-500/15 text-red-300 border border-red-500/20">30 Qs</span></div><p class="mt-2 text-[14px] text-[#e8ecf3]/70">2011-2024 • MOST HEAVILY TESTED THEME</p></div>
+      </div></div>
+
+      <div class="reveal glass priority-red rounded-[20px] p-[1px]"><div class="rounded-[19px] bg-black/30 p-5 md:p-6 flex items-start gap-4">
+        <div class="num text-[42px] md:text-[56px] text-white/15 leading-none w-14 text-center">2</div>
+        <div class="flex-1"><div class="flex items-baseline justify-between gap-3 flex-wrap"><h3 class="text-[19px] md:text-[22px]">Fundamental Rights, DPSP & Fundamental Duties</h3><span class="text-[13px] px-2 py-1 rounded bg-red-500/15 text-red-300 border border-red-500/20">22 Qs</span></div><p class="mt-2 text-[14px] text-[#e8ecf3]/70">2011-2024 • MOST FREQUENTLY TESTED</p></div>
+      </div></div>
+
+      <div class="reveal glass priority-red rounded-[20px] p-[1px]"><div class="rounded-[19px] bg-black/30 p-5 md:p-6 flex items-start gap-4">
+        <div class="num text-[42px] md:text-[56px] text-white/15 leading-none w-14 text-center">1</div>
+        <div class="flex-1"><div class="flex items-baseline justify-between gap-3 flex-wrap"><h3 class="text-[19px] md:text-[22px]">Constitutional Framework & Historical Evolution</h3><span class="text-[13px] px-2 py-1 rounded bg-red-500/15 text-red-300 border border-red-500/20">18 Qs</span></div><p class="mt-2 text-[14px] text-[#e8ecf3]/70">2012-2024 • CORE RECURRING</p></div>
+      </div></div>
+
+      <div class="reveal glass priority-red rounded-[20px] p-[1px]"><div class="rounded-[19px] bg-black/30 p-5 md:p-6 flex items-start gap-4">
+        <div class="num text-[42px] md:text-[56px] text-white/15 leading-none w-14 text-center">4</div>
+        <div class="flex-1"><div class="flex items-baseline justify-between gap-3 flex-wrap"><h3 class="text-[19px] md:text-[22px]">Executive: President, Governor, PM & Council</h3><span class="text-[13px] px-2 py-1 rounded bg-red-500/15 text-red-300 border border-red-500/20">18 Qs</span></div><p class="mt-2 text-[14px] text-[#e8ecf3]/70">2012-2024 • CONSISTENTLY TESTED</p></div>
+      </div></div>
+
+      <div class="reveal glass priority-yellow rounded-[20px] p-[1px]"><div class="rounded-[19px] bg-black/30 p-5 md:p-6 flex items-start gap-4">
+        <div class="num text-[42px] md:text-[56px] text-white/15 leading-none w-14 text-center">6</div>
+        <div class="flex-1"><div class="flex items-baseline justify-between gap-3 flex-wrap"><h3 class="text-[19px] md:text-[22px]">Preamble, Political Theory & Concepts</h3><span class="text-[13px] px-2 py-1 rounded bg-yellow-500/15 text-yellow-300 border border-yellow-500/20">16 Qs</span></div><p class="mt-2 text-[14px] text-[#e8ecf3]/70">2014-2024 • RECURRING CONCEPTUAL</p></div>
+      </div></div>
+
+      <div class="reveal glass priority-yellow rounded-[20px] p-[1px]"><div class="rounded-[19px] bg-black/30 p-5 md:p-6 flex items-start gap-4">
+        <div class="num text-[42px] md:text-[56px] text-white/15 leading-none w-14 text-center">5</div>
+        <div class="flex-1"><div class="flex items-baseline justify-between gap-3 flex-wrap"><h3 class="text-[19px] md:text-[22px]">Judiciary: Supreme Court, High Court & Review</h3><span class="text-[13px] px-2 py-1 rounded bg-yellow-500/15 text-yellow-300 border border-yellow-500/20">14 Qs</span></div><p class="mt-2 text-[14px] text-[#e8ecf3]/70">2012-2024 • CONSISTENTLY TESTED</p></div>
+      </div></div>
+
+      <div class="reveal glass priority-yellow rounded-[20px] p-[1px]"><div class="rounded-[19px] bg-black/30 p-5 md:p-6 flex items-start gap-4">
+        <div class="num text-[42px] md:text-[56px] text-white/15 leading-none w-14 text-center">9</div>
+        <div class="flex-1"><div class="flex items-baseline justify-between gap-3 flex-wrap"><h3 class="text-[19px] md:text-[22px]">Finance: Budget, CAG, Finance Commission</h3><span class="text-[13px] px-2 py-1 rounded bg-yellow-500/15 text-yellow-300 border border-yellow-500/20">12 Qs</span></div><p class="mt-2 text-[14px] text-[#e8ecf3]/70">2011-2024 • CONSISTENTLY TESTED</p></div>
+      </div></div>
+
+      <div class="reveal glass priority-blue rounded-[20px] p-[1px]"><div class="rounded-[19px] bg-black/30 p-5 md:p-6 flex items-start gap-4">
+        <div class="num text-[42px] md:text-[56px] text-white/15 leading-none w-14 text-center">7</div>
+        <div class="flex-1"><div class="flex items-baseline justify-between gap-3 flex-wrap"><h3 class="text-[19px] md:text-[22px]">Local Governance: Panchayats & Municipalities</h3><span class="text-[13px] px-2 py-1 rounded bg-blue-500/15 text-blue-300 border border-blue-500/20">12 Qs</span></div><p class="mt-2 text-[14px] text-[#e8ecf3]/70">2011-2024 • MODERATELY RECURRING</p></div>
+      </div></div>
+
+      <div class="reveal glass priority-blue rounded-[20px] p-[1px]"><div class="rounded-[19px] bg-black/30 p-5 md:p-6 flex items-start gap-4">
+        <div class="num text-[42px] md:text-[56px] text-white/15 leading-none w-14 text-center">8</div>
+        <div class="flex-1"><div class="flex items-baseline justify-between gap-3 flex-wrap"><h3 class="text-[19px] md:text-[22px]">Elections, Representation & Political Parties</h3><span class="text-[13px] px-2 py-1 rounded bg-blue-500/15 text-blue-300 border border-blue-500/20">10 Qs</span></div><p class="mt-2 text-[14px] text-[#e8ecf3]/70">2012-2024 • MODERATELY RECURRING</p></div>
+      </div></div>
+
+      <div class="reveal glass priority-blue rounded-[20px] p-[1px]"><div class="rounded-[19px] bg-black/30 p-5 md:p-6 flex items-start gap-4">
+        <div class="num text-[42px] md:text-[56px] text-white/15 leading-none w-14 text-center">10</div>
+        <div class="flex-1"><div class="flex items-baseline justify-between gap-3 flex-wrap"><h3 class="text-[19px] md:text-[22px]">Special Provisions, NEC & Miscellaneous Bodies</h3><span class="text-[13px] px-2 py-1 rounded bg-blue-500/15 text-blue-300 border border-blue-500/20">8 Qs</span></div><p class="mt-2 text-[14px] text-[#e8ecf3]/70">2013-2024 • EMERGING / SPORADIC</p></div>
+      </div></div>
+
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="relative z-10 w-full max-w-4xl mx-auto text-center px-6">
+    <div class="reveal glass-strong rounded-[28px] p-[1px]">
+      <div class="rounded-[27px] bg-black/40 p-8 md:p-10">
+        <h2 class="text-[28px] md:text-[36px]">How to use this</h2>
+        <p class="mt-4 text-[16px] md:text-[18px] text-[#e8ecf3]/80 leading-relaxed">Start with red themes first. Parliament, Fundamental Rights, Constitutional Framework, and Executive together give you 88 questions across 13 years. That is your 60 percent base. Master these from Laxmikanth chapters 1 to 30 before touching blue themes. Do one theme at a time, solve its PYQs, then move on.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+<script>
+const io=new IntersectionObserver((entries)=>{entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}})},{threshold:.15}); document.querySelectorAll('.reveal').forEach(n=>io.observe(n));
+const scroller=document.getElementById('scroll'); const prog=document.getElementById('progress'); scroller.addEventListener('scroll',()=>{const h=scroller.scrollHeight-scroller.clientHeight; const p=h>0?scroller.scrollTop/h:0; prog.style.transform=`scaleX(${p})`;},{passive:true});
+</script>
+</body>
+</html>
