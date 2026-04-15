@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Playables SDK -->
+<script>// Playables SDK v1.0.0
+// Game lifecycle bridge: rAF-based game-ready detection + event communication
+(function() {
+  'use strict';
+  if (window.playablesSDK) return;
+  var HANDLER_NAME = 'playablesGameEventHandler';
+  var ANDROID_BRIDGE_NAME = '_MetaPlayablesBridge';
+  var RAF_FRAME_THRESHOLD = 3;
+  var gameReadySent = false;
+  var firstInteractionSent = false;
+  var errorSent = false;
+  var frameCount = 0;
+  var originalRAF = window.requestAnimationFrame;
+  function hasIOSBridge() {return !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers[HANDLER_NAME]);}
+  function hasAndroidBridge() {return !!(window[ANDROID_BRIDGE_NAME] && typeof window[ANDROID_BRIDGE_NAME].postEvent === 'function');}
+  function isInIframe() {return !!(window.parent && window.parent !== window);}
+  function sendEvent(eventName, payload) {
+    var message = {type: eventName,payload: payload || {},timestamp: Date.now()};
+    if (hasIOSBridge()) {try {window.webkit.messageHandlers[HANDLER_NAME].postMessage(message);} catch (e) {} return;}
+    if (hasAndroidBridge()) {try {var p = payload || {};p.__secureToken = window.__fbAndroidBridgeAuthToken || '';window[ANDROID_BRIDGE_NAME].postEvent(eventName,JSON.stringify(p));} catch (e) {} return;}
+    if (isInIframe()) {try {window.parent.postMessage(message, '*');} catch (e) {} return;}
+  }
+  function onFrame() {if (gameReadySent) return;frameCount++;if (frameCount >= RAF_FRAME_THRESHOLD) {gameReadySent = true;sendEvent('game_ready',{frame_count: frameCount,detected_at: Date.now()});return;}originalRAF.call(window, onFrame);}
+  if (originalRAF) {window.requestAnimationFrame = function(callback) {if (!gameReadySent) {return originalRAF.call(window, function(timestamp) {frameCount++;if (frameCount >= RAF_FRAME_THRESHOLD && !gameReadySent) {gameReadySent = true;sendEvent('game_ready',{frame_count: frameCount,detected_at: Date.now()});}callback(timestamp);});}return originalRAF.call(window, callback);}; }
+  function setupFirstInteractionDetection() {var events = ['touchstart', 'mousedown', 'keydown'];function onFirstInteraction() {if (firstInteractionSent) return;firstInteractionSent = true;sendEvent('user_interaction_start', null);for (var i = 0; i < events.length; i++) {document.removeEventListener(events[i], onFirstInteraction, true);}}for (var i = 0; i < events.length; i++) {document.addEventListener(events[i], onFirstInteraction, true);}}
+  if (document.readyState === 'loading') {document.addEventListener('DOMContentLoaded', setupFirstInteractionDetection);} else {setupFirstInteractionDetection();}
+  window.addEventListener('error', function(event) {if (errorSent) return;errorSent = true;sendEvent('error',{message: event.message || 'Unknown error',source: event.filename || '',lineno: event.lineno || 0,colno: event.colno || 0,auto_captured: true});});
+  window.addEventListener('unhandledrejection', function(event) {if (errorSent) return;errorSent = true;var reason = event.reason;sendEvent('error',{message: (reason instanceof Error) ? reason.message : String(reason),type: 'unhandled_promise_rejection',auto_captured: true});});
+  window.playablesSDK = {complete: function(score) {sendEvent('game_ended',{score: score,completed: true});},error: function(message) {if (errorSent) return;errorSent = true;sendEvent('error',{message: message || 'Unknown error',auto_captured: false});},sendEvent: function(eventName, payload) {if (!eventName || typeof eventName !== 'string') return;sendEvent(eventName, payload);}};
+  if (originalRAF) {originalRAF.call(window, onFrame);}
+})();</script>
+<script>window.Intl=window.Intl||{};Intl.t=function(s){return(Intl._locale&&Intl._locale[s])||s;};</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<title>UPSC Beginner Guide — Part 2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+:root{--bg:#030308;--text:#e8ecf3;}
+html,body{height:100%;background:var(--bg);color:var(--text);overscroll-behavior:none;overflow-x:hidden}
+body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;-webkit-tap-highlight-color:transparent;touch-action:pan-y}
+h1,h2,h3{font-family:Syne,Inter,sans-serif;font-weight:800;letter-spacing:-0.02em}
+*::selection{background:rgba(139,92,246,.3)}
+#scroll{height:100svh;height:100dvh;overflow-y:scroll;overflow-x:hidden;scroll-snap-type:y mandatory;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}
+section{scroll-snap-align:start;scroll-snap-stop:always;min-height:100svh;min-height:100dvh;position:relative;display:flex;align-items:center;justify-content:center;padding:clamp(20px,5vw,64px);padding-top:calc(clamp(20px,5vw,64px) + env(safe-area-inset-top));padding-bottom:calc(clamp(20px,5vw,64px) + env(safe-area-inset-bottom))}
+#progress{transform-origin:left;will-change:transform}
+.blobs{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;filter:saturate(110%)}
+.blob{position:absolute;width:60vmax;height:60vmax;border-radius:50%;filter:blur(90px);opacity:.35;mix-blend-mode:screen;will-change:transform}
+.b1{left:-15%;top:-20%;background:radial-gradient(closest-side,#7c3aed,transparent 70%);animation:blob1 28s ease-in-out infinite}
+.b2{right:-20%;top:10%;background:radial-gradient(closest-side,#ec4899,transparent 70%);animation:blob2 32s ease-in-out infinite}
+.b3{left:10%;bottom:-25%;background:radial-gradient(closest-side,#3b82f6,transparent 70%);animation:blob3 30s ease-in-out infinite}
+@keyframes blob1{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(5%,8%) scale(1.1)}66%{transform:translate(-4%,-3%) scale(0.95)}}
+@keyframes blob2{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(-8%,5%) scale(1.05)}66%{transform:translate(3%,-6%) scale(0.98)}}
+@keyframes blob3{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(6%,-4%) scale(1.08)}66%{transform:translate(-5%,7%) scale(0.96)}}
+.glass{background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02));backdrop-filter:blur(20px) saturate(120%);-webkit-backdrop-filter:blur(20px) saturate(120%);border:1px solid rgba(255,255,255,.09);box-shadow:0 10px 40px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.06)}
+.glass-strong{background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.03));backdrop-filter:blur(24px) saturate(140%);-webkit-backdrop-filter:blur(24px) saturate(140%);border:1px solid rgba(255,255,255,.14)}
+.pill{display:inline-flex;align-items:center;gap:.5rem;padding:.55rem .9rem;border-radius:999px;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(232,236,243,.85);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(8px)}
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .9s cubic-bezier(.2,.8,.2,1),transform .9s cubic-bezier(.2,.8,.2,1)}
+.reveal.in{opacity:1;transform:none}
+.type-caret::after{content:"";display:inline-block;width:2px;height:1.1em;background:currentColor;margin-left:3px;transform:translateY(2px);animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.watermark{writing-mode:vertical-rl;transform:rotate(180deg);letter-spacing:.38em}
+.num{font-family:Syne,sans-serif;font-weight:800;line-height:.9;filter:drop-shadow(0 20px 40px rgba(0,0,0,.5));display:block;padding-bottom:0.1em}
+@media (max-width:768px){
+  .blob{width:50vmax;height:50vmax;filter:blur(60px);opacity:.3}
+  .glass,.glass-strong{backdrop-filter:blur(16px) saturate(110%);-webkit-backdrop-filter:blur(16px) saturate(110%)}
+  section{padding-left:20px;padding-right:20px}
+  .num{font-size:clamp(80px,24vw,120px)!important}
+  h1{font-size:clamp(38px,11vw,72px)!important}
+  .pill{font-size:.68rem;padding:.5rem .75rem}
+}
+@media (max-width:480px){
+  .blob{filter:blur(45px);opacity:.25}
+  section{padding-left:16px;padding-right:16px}
+}
+@media (prefers-reduced-motion:reduce){
+  .blob{animation:none}
+  .reveal{transition:none}
+}
+</style>
+</head>
+<body class="relative">
+  <div class="blobs" aria-hidden="true"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+  <div id="progress" class="fixed top-0 left-0 right-0 h-[2px] z-[100] bg-gradient-to-r from-violet-500 via-fuchsia-500 to-blue-500 scale-x-0" style="top:env(safe-area-inset-top)"></div>
+  <div class="watermark hidden lg:block fixed left-6 top-1/2 -translate-y-1/2 text-[11px] text-white/15 z-10 select-none">UPSC PART 2</div>
+  <main id="scroll">
+    
+    <section>
+      <div class="relative z-10 w-full max-w-6xl mx-auto text-center">
+        <div class="reveal">
+          <span class="pill">PART 2</span>
+          <h1 class="mt-6 text-[clamp(44px,9vw,112px)] leading-[0.85] tracking-[-0.02em]">Starter Kit <span class="bg-gradient-to-r from-violet-300 via-fuchsia-300 to-blue-300 bg-clip-text text-transparent">& 30 Days</span></h1>
+          <p id="type" class="type-caret mt-6 md:mt-8 text-[clamp(16px,2.2vw,22px)] text-[#e8ecf3]/75 h-[1.6em]"></p>
+          <div class="mt-10 md:mt-14 flex flex-wrap items-center justify-center gap-2.5">
+            <span class="pill">SIX BOOKS</span><span class="pill">FOUR HOURS</span><span class="pill">ZERO CONFUSION</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="relative z-10 w-full max-w-5xl mx-auto">
+        <div class="reveal glass-strong rounded-[32px] p-[1px]">
+          <div class="rounded-[31px] bg-black/20 px-7 py-10 md:px-14 md:py-14">
+            <p class="text-sm tracking-[0.3em] text-white/40 uppercase mb-4">Step Zero Recap</p>
+            <h2 class="text-[clamp(28px,4vw,44px)] leading-tight">Understand the game in one minute</h2>
+            <p class="mt-6 text-[17px] md:text-[19px] leading-relaxed text-[#e8ecf3]/80">UPSC has three rounds. Prelims in May or June has two papers but only GS Paper 1 counts for cutoff. Over ten lakh apply, about thirteen to fourteen thousand pass. Its only job is to screen people out. Mains in September is nine papers, seven count for rank. This is five days of writing answers, and this decides your rank. Interview in March or April is a thirty minute conversation worth 275 marks. They test personality and thinking, not memory.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="relative z-10 w-full max-w-6xl mx-auto px-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
+          <div class="reveal glass rounded-[28px] p-[1px] h-full"><div class="h-full rounded-[27px] bg-[#0a0a12]/60 p-7 md:p-8"><h3 class="text-[22px]">Prelims</h3><div class="mt-4 space-y-2 text-[15px] text-[#e8ecf3]/75"><p>May/June • 2 papers</p><p>Only GS-1 counts</p><p>10 lakh apply → 13-14k pass</p></div></div></div>
+          <div class="reveal glass rounded-[28px] p-[1px] h-full" style="transition-delay:.08s"><div class="h-full rounded-[27px] bg-[#0a0a12]/60 p-7 md:p-8"><h3 class="text-[22px]">Mains</h3><div class="mt-4 space-y-2 text-[15px] text-[#e8ecf3]/75"><p>September • 9 papers, 7 count</p><p>5 days of writing</p><p>Rank maker</p></div></div></div>
+          <div class="reveal glass rounded-[28px] p-[1px] h-full" style="transition-delay:.16s"><div class="h-full rounded-[27px] bg-[#0a0a12]/60 p-7 md:p-8"><h3 class="text-[22px]">Interview</h3><div class="mt-4 space-y-2 text-[15px] text-[#e8ecf3]/75"><p>March/April • 30 mins</p><p>275 marks</p><p>Personality test</p></div></div></div>
+        </div>
+        <div class="reveal mt-10 text-center max-w-3xl mx-auto">
+          <p class="text-[17px] md:text-[19px] leading-relaxed text-[#e8ecf3]/75">Total seats: around 1,000 yearly. Start April 2026 → first attempt June 2027 = 14 months. Perfect. Next 8 months: only build base and integrate Mains with Prelims. Do not worry about Interview now.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="relative z-10 w-full max-w-4xl mx-auto text-center px-6">
+        <div class="reveal"><p class="text-sm tracking-[0.3em] text-white/40 uppercase">Your Starter Kit</p><h2 class="mt-3 text-[clamp(34px,6vw,64px)] leading-[1.05]">Six things, not fifty</h2><p class="mt-5 text-[17px] md:text-lg text-[#e8ecf3]/65">Coaching will sell you a library. You need six sources. Cost about 2,500 rupees, less second-hand.</p></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="relative z-10 w-full max-w-6xl mx-auto px-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div class="reveal glass rounded-[24px] p-6"><div class="flex gap-4"><div class="num text-[48px] text-white/20">01</div><div><h3 class="text-[20px]">UPSC Syllabus PDF</h3><p class="mt-2 text-[15px] text-[#e8ecf3]/75">Your GPS. Print it. Stick above your table. Read 2 minutes daily. Every question comes from here.</p></div></div></div>
+          <div class="reveal glass rounded-[24px] p-6"><div class="flex gap-4"><div class="num text-[48px] text-fuchsia-400/30">02</div><div><h3 class="text-[20px]">Last 10 Years PYQs</h3><p class="mt-2 text-[15px] text-[#e8ecf3]/75">Do not solve yet. Read one Prelims paper today. Notice the shift to how many pairs are correct format.</p></div></div></div>
+          <div class="reveal glass rounded-[24px] p-6"><div class="flex gap-4"><div class="num text-[48px] text-violet-400/30">03</div><div><h3 class="text-[20px]">Polity: M Laxmikanth 7th Ed</h3><p class="mt-2 text-[15px] text-[#e8ecf3]/75">Covers about 15 percent Prelims and most of Mains GS2. Start Chapter 1 Historical Background.</p></div></div></div>
+          <div class="reveal glass rounded-[24px] p-6"><div class="flex gap-4"><div class="num text-[48px] text-sky-400/30">04</div><div><h3 class="text-[20px]">History: NCERT + Spectrum</h3><p class="mt-2 text-[15px] text-[#e8ecf3]/75">Class 12 Themes in Indian History Parts 1, 2, 3 plus Spectrum Brief History. Start 10 pages a day from Themes Part 1.</p></div></div></div>
+          <div class="reveal glass rounded-[24px] p-6"><div class="flex gap-4"><div class="num text-[48px] text-white/20">05</div><div><h3 class="text-[20px]">Geography: NCERT 11 + GC Leong</h3><p class="mt-2 text-[15px] text-[#e8ecf3]/75">Fundamentals of Physical Geography Class 11 and GC Leong. Begin with Class 11 Chapter 2.</p></div></div></div>
+          <div class="reveal glass rounded-[24px] p-6"><div class="flex gap-4"><div class="num text-[48px] text-fuchsia-400/30">06</div><div><h3 class="text-[20px]">Current Affairs</h3><p class="mt-2 text-[15px] text-[#e8ecf3]/75">Pick The Hindu or Indian Express plus one monthly compilation from Vision or Insights. Today: front page and one editorial.</p></div></div></div>
+        </div>
+        <p class="reveal mt-8 text-center text-[15px] text-[#e8ecf3]/60">Do not buy optional books yet. Depth in these six beats touching twenty sources once.</p>
+      </div>
+    </section>
+
+    <section>
+      <div class="relative z-10 w-full max-w-4xl mx-auto text-center px-6">
+        <div class="reveal"><div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 text-xs tracking-widest text-white/60 mb-6">FOUNDATION MONTH</div><h2 class="text-[clamp(36px,6vw,72px)] leading-[0.95]">Your first 30 days</h2><p class="mt-6 text-[18px] md:text-[20px] leading-relaxed text-[#e8ecf3]/75">Goal is not to finish syllabus. Goal is to kill fear and build habit.</p></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="relative z-10 w-full max-w-5xl mx-auto px-6">
+        <div class="reveal text-center mb-10"><h3 class="text-[26px] md:text-[32px]">The 4-hour daily routine</h3><p class="mt-2 text-[#e8ecf3]/65">Works for college or job</p></div>
+        <div class="space-y-5">
+          <div class="reveal glass-strong rounded-[24px] p-[1px]"><div class="rounded-[23px] bg-black/30 p-6 md:p-8"><div class="flex items-start gap-4"><div class="text-[14px] tracking-widest text-violet-300/80 mt-1">HOUR 1</div><div><h4 class="text-[20px]">Newspaper • 60 min</h4><p class="mt-2 text-[15px] text-[#e8ecf3]/75">Read only three things: syllabus-linked news like Supreme Court judgments, one editorial for opinion, one international issue. Make maximum five bullet points.</p></div></div></div></div>
+          <div class="reveal glass-strong rounded-[24px] p-[1px]"><div class="rounded-[23px] bg-black/30 p-6 md:p-8"><div class="flex items-start gap-4"><div class="text-[14px] tracking-widest text-fuchsia-300/80 mt-1">HOUR 2-3</div><div><h4 class="text-[20px]">Static Subject • 120 min</h4><p class="mt-2 text-[15px] text-[#e8ecf3]/75">Weeks 1 and 2: Polity Laxmikanth Chapters 1 to 10, about 8 pages a day, read each page twice. Weeks 3 and 4: History Class 12 Themes, 10 pages a day. After every chapter, close book and write five points you remember. That is active recall.</p></div></div></div></div>
+          <div class="reveal glass-strong rounded-[24px] p-[1px]"><div class="rounded-[23px] bg-black/30 p-6 md:p-8"><div class="flex items-start gap-4"><div class="text-[14px] tracking-widest text-sky-300/80 mt-1">HOUR 4</div><div><h4 class="text-[20px]">Revise + PYQ • 60 min</h4><p class="mt-2 text-[15px] text-[#e8ecf3]/75">First 30 minutes: revise what you studied yesterday. Memory is built by revisiting. Next 30 minutes: open PYQ PDF, find two questions from your chapter, try them. You will get them wrong. Perfect. Now you know the depth UPSC wants.</p></div></div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="relative z-10 w-full max-w-4xl mx-auto px-6">
+        <div class="grid md:grid-cols-2 gap-6">
+          <div class="reveal glass rounded-[24px] p-7"><h3 class="text-[20px]">Weekends</h3><p class="mt-3 text-[15px] text-[#e8ecf3]/75">Give one sectional Prelims test on Polity or History from any free site. No pressure, just pattern recognition.</p></div>
+          <div class="reveal glass rounded-[24px] p-7"><h3 class="text-[20px]">Zero Days Policy</h3><p class="mt-3 text-[15px] text-[#e8ecf3]/75">Even if sick or traveling, read one page. Keep the chain unbroken. Consistency beats intensity.</p></div>
+        </div>
+        <div class="reveal mt-14 text-center">
+          <div class="h-px w-32 mx-auto bg-gradient-to-r from-transparent via-white/30 to-transparent mb-6"></div>
+          <p class="text-[13px] tracking-[0.2em] text-white/40 uppercase">End of Part 2 — Next: Note-making and Answer Writing</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+<script>
+  const txt = "Six books, four hours a day, thirty days to kill the fear.";
+  const el = document.getElementById('type'); let i=0; function type(){if(i<=txt.length){el.textContent=txt.slice(0,i);i++;setTimeout(type,28+Math.random()*22);}} setTimeout(type,400);
+  const io=new IntersectionObserver((entries)=>{entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}})},{threshold:.2}); document.querySelectorAll('.reveal').forEach(n=>io.observe(n));
+  const scroller=document.getElementById('scroll'); const prog=document.getElementById('progress'); scroller.addEventListener('scroll',()=>{const h=scroller.scrollHeight-scroller.clientHeight; const p=h>0?scroller.scrollTop/h:0; prog.style.transform=`scaleX(${p})`;},{passive:true});
+  window.addEventListener('keydown',(e)=>{if(e.key==='ArrowDown'){scroller.scrollBy({top:window.innerHeight*0.9,behavior:'smooth'});} if(e.key==='ArrowUp'){scroller.scrollBy({top:-window.innerHeight*0.9,behavior:'smooth'});}});
+  let startY=0; scroller.addEventListener('touchstart',e=>{startY=e.touches[0].clientY},{passive:true});
+</script>
+</body>
+</html>
