@@ -200,13 +200,13 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
 :root{--bg:#030308;--text:#e8ecf3;}
-html,body{height:100%;background:var(--bg);color:var(--text);overscroll-behavior:none;}
-body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+html,body{height:100%;background:var(--bg);color:var(--text);overscroll-behavior:none;overflow-x:hidden;}
+body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;-webkit-tap-highlight-color:transparent;touch-action:manipulation;padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);}
 h1,h2,h3{font-family:Syne,Inter,sans-serif;font-weight:800;letter-spacing:-0.02em;}
 *::selection{background:rgba(139,92,246,.3);}
 
 /* scroll snap */
-#scroll{height:100dvh;overflow-y:scroll;scroll-snap-type:y mandatory;scroll-behavior:smooth;-webkit-overflow-scrolling:touch}
+#scroll{height:100svh;overflow-y:scroll;overflow-x:hidden;scroll-snap-type:y mandatory;scroll-behavior:smooth;-webkit-overflow-scrolling:touch}
 section{scroll-snap-align:start;scroll-snap-stop:always;min-height:100dvh;position:relative;display:flex;align-items:center;justify-content:center;padding:clamp(24px,5vw,64px)}
 
 /* progress */
@@ -248,6 +248,28 @@ section{scroll-snap-align:start;scroll-snap-stop:always;min-height:100dvh;positi
   .num{font-size:110px!important;margin-bottom:0.15em}
   section .grid{gap:1.5rem!important}
 }
+
+/* --- DEVICE FRIENDLY FIXES --- */
+@media (max-width: 768px){
+  .num{font-size:clamp(72px,22vw,110px)!important;margin-bottom:0.15em}
+  section .grid{gap:1.5rem!important}
+  .blob{width:45vmax;height:45vmax;filter:blur(60px);opacity:.28}
+  .glass,.glass-strong{backdrop-filter:blur(14px) saturate(110%);-webkit-backdrop-filter:blur(14px) saturate(110%)}
+  section{padding:clamp(20px,6vw,40px);min-height:90svh}
+}
+@media (max-width: 640px){
+  #scroll{height:auto;overflow-y:visible;scroll-snap-type:none}
+  section{scroll-snap-align:unset;min-height:auto;padding-top:56px;padding-bottom:56px}
+  h1{line-height:0.92}
+  .pill{font-size:.68rem;padding:.5rem .75rem}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.01ms!important}
+  .blobs{display:none}
+  #scroll{scroll-behavior:auto}
+}
+img,video{max-width:100%;height:auto}
+
 </style>
 </head>
 <body class="relative">
