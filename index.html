@@ -6,193 +6,36 @@
 // Game lifecycle bridge: rAF-based game-ready detection + event communication
 (function() {
   'use strict';
-
-  // Idempotency: skip if already initialized (e.g., server-side injection
-  // followed by client-side inject-javascript via the Bloks webview component).
   if (window.playablesSDK) return;
-
   var HANDLER_NAME = 'playablesGameEventHandler';
   var ANDROID_BRIDGE_NAME = '_MetaPlayablesBridge';
   var RAF_FRAME_THRESHOLD = 3;
-
   var gameReadySent = false;
   var firstInteractionSent = false;
   var errorSent = false;
   var frameCount = 0;
   var originalRAF = window.requestAnimationFrame;
-
-  // --- Transport Layer ---
-
-  function hasIOSBridge() {
-    return !!(window.webkit &&
-              window.webkit.messageHandlers &&
-              window.webkit.messageHandlers[HANDLER_NAME]);
-  }
-
-  function hasAndroidBridge() {
-    return !!(window[ANDROID_BRIDGE_NAME] &&
-              typeof window[ANDROID_BRIDGE_NAME].postEvent === 'function');
-  }
-
-  function isInIframe() {
-    return !!(window.parent && window.parent !== window);
-  }
-
+  function hasIOSBridge() {return !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers[HANDLER_NAME]);}
+  function hasAndroidBridge() {return !!(window[ANDROID_BRIDGE_NAME] && typeof window[ANDROID_BRIDGE_NAME].postEvent === 'function');}
+  function isInIframe() {return !!(window.parent && window.parent !== window);}
   function sendEvent(eventName, payload) {
-    var message = {
-      type: eventName,
-      payload: payload || {},
-      timestamp: Date.now()
-    };
-
-    if (hasIOSBridge()) {
-      try {
-        window.webkit.messageHandlers[HANDLER_NAME].postMessage(message);
-      } catch (e) { /* ignore */ }
-      return;
-    }
-
-    if (hasAndroidBridge()) {
-    try {
-      var p = payload || {};
-      p.__secureToken = window.__fbAndroidBridgeAuthToken || '';
-      window[ANDROID_BRIDGE_NAME].postEvent(
-        eventName,
-        JSON.stringify(p)
-      );
-    } catch (e) { /* ignore */ }
-    return;
+    var message = {type: eventName,payload: payload || {},timestamp: Date.now()};
+    if (hasIOSBridge()) {try {window.webkit.messageHandlers[HANDLER_NAME].postMessage(message);} catch (e) {} return;}
+    if (hasAndroidBridge()) {try {var p = payload || {};p.__secureToken = window.__fbAndroidBridgeAuthToken || '';window[ANDROID_BRIDGE_NAME].postEvent(eventName,JSON.stringify(p));} catch (e) {} return;}
+    if (isInIframe()) {try {window.parent.postMessage(message, '*');} catch (e) {} return;}
   }
-
-    if (isInIframe()) {
-      try {
-        window.parent.postMessage(message, '*');
-      } catch (e) { /* ignore */ }
-      return;
-    }
-  }
-
-  // --- rAF Game-Ready Detection ---
-
-  function onFrame() {
-    if (gameReadySent) return;
-
-    frameCount++;
-    if (frameCount >= RAF_FRAME_THRESHOLD) {
-      gameReadySent = true;
-      sendEvent('game_ready', {
-        frame_count: frameCount,
-        detected_at: Date.now()
-      });
-      return;
-    }
-
-    originalRAF.call(window, onFrame);
-  }
-
-  if (originalRAF) {
-    window.requestAnimationFrame = function(callback) {
-      if (!gameReadySent) {
-        return originalRAF.call(window, function(timestamp) {
-          frameCount++;
-          if (frameCount >= RAF_FRAME_THRESHOLD && !gameReadySent) {
-            gameReadySent = true;
-            sendEvent('game_ready', {
-              frame_count: frameCount,
-              detected_at: Date.now()
-            });
-          }
-          callback(timestamp);
-        });
-      }
-      return originalRAF.call(window, callback);
-    };
-  }
-
-  // --- First User Interaction Detection ---
-
-  function setupFirstInteractionDetection() {
-    var events = ['touchstart', 'mousedown', 'keydown'];
-
-    function onFirstInteraction() {
-      if (firstInteractionSent) return;
-      firstInteractionSent = true;
-      sendEvent('user_interaction_start', null);
-
-      for (var i = 0; i < events.length; i++) {
-        document.removeEventListener(events[i], onFirstInteraction, true);
-      }
-    }
-
-    for (var i = 0; i < events.length; i++) {
-      document.addEventListener(events[i], onFirstInteraction, true);
-    }
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', setupFirstInteractionDetection);
-  } else {
-    setupFirstInteractionDetection();
-  }
-
-  // --- Auto Error Capture ---
-
-  window.addEventListener('error', function(event) {
-    if (errorSent) return;
-    errorSent = true;
-    sendEvent('error', {
-      message: event.message || 'Unknown error',
-      source: event.filename || '',
-      lineno: event.lineno || 0,
-      colno: event.colno || 0,
-      auto_captured: true
-    });
-  });
-
-  window.addEventListener('unhandledrejection', function(event) {
-    if (errorSent) return;
-    errorSent = true;
-    var reason = event.reason;
-    sendEvent('error', {
-      message: (reason instanceof Error) ? reason.message : String(reason),
-      type: 'unhandled_promise_rejection',
-      auto_captured: true
-    });
-  });
-
-  // --- Public API ---
-
-  window.playablesSDK = {
-    complete: function(score) {
-      sendEvent('game_ended', {
-        score: score,
-        completed: true
-      });
-    },
-
-    error: function(message) {
-      if (errorSent) return;
-      errorSent = true;
-      sendEvent('error', {
-        message: message || 'Unknown error',
-        auto_captured: false
-      });
-    },
-
-    sendEvent: function(eventName, payload) {
-      if (!eventName || typeof eventName !== 'string') return;
-      sendEvent(eventName, payload);
-    }
-  };
-
-  // Kick off rAF detection in case no game code calls rAF immediately
-  if (originalRAF) {
-    originalRAF.call(window, onFrame);
-  }
+  function onFrame() {if (gameReadySent) return;frameCount++;if (frameCount >= RAF_FRAME_THRESHOLD) {gameReadySent = true;sendEvent('game_ready',{frame_count: frameCount,detected_at: Date.now()});return;}originalRAF.call(window, onFrame);}
+  if (originalRAF) {window.requestAnimationFrame = function(callback) {if (!gameReadySent) {return originalRAF.call(window, function(timestamp) {frameCount++;if (frameCount >= RAF_FRAME_THRESHOLD && !gameReadySent) {gameReadySent = true;sendEvent('game_ready',{frame_count: frameCount,detected_at: Date.now()});}callback(timestamp);});}return originalRAF.call(window, callback);}; }
+  function setupFirstInteractionDetection() {var events = ['touchstart', 'mousedown', 'keydown'];function onFirstInteraction() {if (firstInteractionSent) return;firstInteractionSent = true;sendEvent('user_interaction_start', null);for (var i = 0; i < events.length; i++) {document.removeEventListener(events[i], onFirstInteraction, true);}}for (var i = 0; i < events.length; i++) {document.addEventListener(events[i], onFirstInteraction, true);}}
+  if (document.readyState === 'loading') {document.addEventListener('DOMContentLoaded', setupFirstInteractionDetection);} else {setupFirstInteractionDetection();}
+  window.addEventListener('error', function(event) {if (errorSent) return;errorSent = true;sendEvent('error',{message: event.message || 'Unknown error',source: event.filename || '',lineno: event.lineno || 0,colno: event.colno || 0,auto_captured: true});});
+  window.addEventListener('unhandledrejection', function(event) {if (errorSent) return;errorSent = true;var reason = event.reason;sendEvent('error',{message: (reason instanceof Error) ? reason.message : String(reason),type: 'unhandled_promise_rejection',auto_captured: true});});
+  window.playablesSDK = {complete: function(score) {sendEvent('game_ended',{score: score,completed: true});},error: function(message) {if (errorSent) return;errorSent = true;sendEvent('error',{message: message || 'Unknown error',auto_captured: false});},sendEvent: function(eventName, payload) {if (!eventName || typeof eventName !== 'string') return;sendEvent(eventName, payload);}};
+  if (originalRAF) {originalRAF.call(window, onFrame);}
 })();</script>
 <script>window.Intl=window.Intl||{};Intl.t=function(s){return(Intl._locale&&Intl._locale[s])||s;};</script>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
 <title>UPSC Beginner Guide — Zero to Start</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -200,20 +43,20 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
 :root{--bg:#030308;--text:#e8ecf3;}
-html,body{height:100%;background:var(--bg);color:var(--text);overscroll-behavior:none;overflow-x:hidden;}
-body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;-webkit-tap-highlight-color:transparent;touch-action:manipulation;padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);}
-h1,h2,h3{font-family:Syne,Inter,sans-serif;font-weight:800;letter-spacing:-0.02em;}
-*::selection{background:rgba(139,92,246,.3);}
+html,body{height:100%;background:var(--bg);color:var(--text);overscroll-behavior:none;overflow-x:hidden}
+body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;-webkit-tap-highlight-color:transparent;touch-action:pan-y}
+h1,h2,h3{font-family:Syne,Inter,sans-serif;font-weight:800;letter-spacing:-0.02em}
+*::selection{background:rgba(139,92,246,.3)}
 
-/* scroll snap */
-#scroll{height:100svh;overflow-y:scroll;overflow-x:hidden;scroll-snap-type:y mandatory;scroll-behavior:smooth;-webkit-overflow-scrolling:touch}
-section{scroll-snap-align:start;scroll-snap-stop:always;min-height:100dvh;position:relative;display:flex;align-items:center;justify-content:center;padding:clamp(24px,5vw,64px)}
+/* scroll snap - KEEP ON ALL DEVICES */
+#scroll{height:100svh;height:100dvh;overflow-y:scroll;overflow-x:hidden;scroll-snap-type:y mandatory;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}
+section{scroll-snap-align:start;scroll-snap-stop:always;min-height:100svh;min-height:100dvh;position:relative;display:flex;align-items:center;justify-content:center;padding:clamp(20px,5vw,64px);padding-top:calc(clamp(20px,5vw,64px) + env(safe-area-inset-top));padding-bottom:calc(clamp(20px,5vw,64px) + env(safe-area-inset-bottom))}
 
 /* progress */
 #progress{transform-origin:left;will-change:transform}
 
 /* blobs */
-.blobs{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;filter:saturate(110%);}
+.blobs{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;filter:saturate(110%)}
 .blob{position:absolute;width:60vmax;height:60vmax;border-radius:50%;filter:blur(90px);opacity:.35;mix-blend-mode:screen;will-change:transform}
 .b1{left:-15%;top:-20%;background:radial-gradient(closest-side,#7c3aed,transparent 70%);animation:blob1 28s ease-in-out infinite}
 .b2{right:-20%;top:10%;background:radial-gradient(closest-side,#ec4899,transparent 70%);animation:blob2 32s ease-in-out infinite}
@@ -232,290 +75,120 @@ section{scroll-snap-align:start;scroll-snap-stop:always;min-height:100dvh;positi
 /* animations */
 .reveal{opacity:0;transform:translateY(24px);transition:opacity .9s cubic-bezier(.2,.8,.2,1),transform .9s cubic-bezier(.2,.8,.2,1)}
 .reveal.in{opacity:1;transform:none}
-.gentleFloat{animation:floaty 6s ease-in-out infinite}
-@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
-.fadeUp{animation:fadeUp .9s cubic-bezier(.2,.8,.2,1) both}
-@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
 .type-caret::after{content:"";display:inline-block;width:2px;height:1.1em;background:currentColor;margin-left:3px;transform:translateY(2px);animation:blink 1s steps(1) infinite}
 @keyframes blink{50%{opacity:0}}
 
-/* watermark left */
+/* watermark */
 .watermark{writing-mode:vertical-rl;transform:rotate(180deg);letter-spacing:.38em}
 
 /* number */
-.num{font-family:Syne,sans-serif;font-weight:800;line-height:1;filter:drop-shadow(0 20px 40px rgba(0,0,0,.5));display:block;padding-bottom:0.1em}
-@media (max-width: 768px){
-  .num{font-size:110px!important;margin-bottom:0.15em}
-  section .grid{gap:1.5rem!important}
-}
+.num{font-family:Syne,sans-serif;font-weight:800;line-height:.9;filter:drop-shadow(0 20px 40px rgba(0,0,0,.5));display:block;padding-bottom:0.1em}
 
-/* --- DEVICE FRIENDLY FIXES --- */
-@media (max-width: 768px){
-  .num{font-size:clamp(72px,22vw,110px)!important;margin-bottom:0.15em}
-  section .grid{gap:1.5rem!important}
-  .blob{width:45vmax;height:45vmax;filter:blur(60px);opacity:.28}
-  .glass,.glass-strong{backdrop-filter:blur(14px) saturate(110%);-webkit-backdrop-filter:blur(14px) saturate(110%)}
-  section{padding:clamp(20px,6vw,40px);min-height:90svh}
-}
-@media (max-width: 640px){
-  #scroll{height:auto;overflow-y:visible;scroll-snap-type:none}
-  section{scroll-snap-align:unset;min-height:auto;padding-top:56px;padding-bottom:56px}
-  h1{line-height:0.92}
+/* MOBILE OPTIMIZATIONS - KEEP SLIDES */
+@media (max-width:768px){
+  .blob{width:50vmax;height:50vmax;filter:blur(60px);opacity:.3}
+  .glass,.glass-strong{backdrop-filter:blur(16px) saturate(110%);-webkit-backdrop-filter:blur(16px) saturate(110%)}
+  section{padding-left:20px;padding-right:20px}
+  .num{font-size:clamp(80px,24vw,120px)!important}
+  h1{font-size:clamp(38px,11vw,72px)!important}
   .pill{font-size:.68rem;padding:.5rem .75rem}
 }
-@media (prefers-reduced-motion:reduce){
-  *{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.01ms!important}
-  .blobs{display:none}
-  #scroll{scroll-behavior:auto}
+@media (max-width:480px){
+  .blob{filter:blur(45px);opacity:.25}
+  section{padding-left:16px;padding-right:16px}
 }
-img,video{max-width:100%;height:auto}
-
+@media (prefers-reduced-motion:reduce){
+  .blob{animation:none}
+  .reveal{transition:none}
+}
 </style>
 </head>
 <body class="relative">
-  <!-- background -->
-  <div class="blobs" aria-hidden="true">
-    <div class="blob b1"></div>
-    <div class="blob b2"></div>
-    <div class="blob b3"></div>
-  </div>
-
-  <!-- progress -->
-  <div id="progress" class="fixed top-0 left-0 right-0 h-[2px] z-[100] bg-gradient-to-r from-violet-500 via-fuchsia-500 to-blue-500 scale-x-0"></div>
-
-  <!-- left watermark desktop -->
+  <div class="blobs" aria-hidden="true"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+  <div id="progress" class="fixed top-0 left-0 right-0 h-[2px] z-[100] bg-gradient-to-r from-violet-500 via-fuchsia-500 to-blue-500 scale-x-0" style="top:env(safe-area-inset-top)"></div>
   <div class="watermark hidden lg:block fixed left-6 top-1/2 -translate-y-1/2 text-[11px] text-white/15 z-10 select-none">UPSC BEGINNER GUIDE</div>
-
   <main id="scroll">
-
-    <!-- SECTION 1 - HERO -->
     <section>
       <div class="relative z-10 w-full max-w-6xl mx-auto text-center">
         <div class="reveal">
-          <h1 class="text-[clamp(44px,9vw,112px)] leading-[0.85] tracking-[-0.02em]">
-            UPSC <span class="bg-gradient-to-r from-violet-300 via-fuchsia-300 to-blue-300 bg-clip-text text-transparent">Beginner</span> Guide
-          </h1>
+          <h1 class="text-[clamp(44px,9vw,112px)] leading-[0.85] tracking-[-0.02em]">UPSC <span class="bg-gradient-to-r from-violet-300 via-fuchsia-300 to-blue-300 bg-clip-text text-transparent">Beginner</span> Guide</h1>
           <p id="type" class="type-caret mt-6 md:mt-8 text-[clamp(16px,2.2vw,22px)] text-[#e8ecf3]/75 h-[1.6em]"></p>
           <div class="mt-10 md:mt-14 flex flex-wrap items-center justify-center gap-2.5">
-            <span class="pill">NO COACHING</span>
-            <span class="pill">NO CONFUSION</span>
-            <span class="pill">JUST A CLEAR START</span>
+            <span class="pill">NO COACHING</span><span class="pill">NO CONFUSION</span><span class="pill">JUST A CLEAR START</span>
           </div>
         </div>
         <div class="pointer-events-none absolute -inset-x-20 -bottom-24 h-40 bg-gradient-to-t from-[#030308] to-transparent blur-2xl"></div>
       </div>
     </section>
-
-    <!-- SECTION 2 - THE STARTING QUESTION -->
     <section>
       <div class="relative z-10 w-full max-w-5xl mx-auto">
         <div class="reveal glass-strong rounded-[32px] p-[1px]">
           <div class="rounded-[31px] bg-black/20 px-7 py-10 md:px-14 md:py-14">
             <div class="flex gap-4">
               <div class="hidden md:block text-5xl leading-none text-white/20 select-none">“</div>
-              <blockquote class="text-[clamp(20px,3vw,32px)] leading-snug tracking-[-0.01em] text-[#e8ecf3]">
-                I want to start UPSC but I have zero idea. No coaching money. No guidance. Where do I even begin?
-              </blockquote>
+              <blockquote class="text-[clamp(20px,3vw,32px)] leading-snug tracking-[-0.01em] text-[#e8ecf3]">I want to start UPSC but I have zero idea. No coaching money. No guidance. Where do I even begin?</blockquote>
             </div>
           </div>
         </div>
-        <p class="reveal mt-8 md:mt-10 mx-auto max-w-3xl text-center text-[17px] md:text-[19px] leading-relaxed text-[#e8ecf3]/70">
-          So this is that beginning. No coaching, no confusion, just a clear Day 1 plan for a normal person. If you can give four hours a day, you can start today, and I'll show you exactly how.
-        </p>
+        <p class="reveal mt-8 md:mt-10 mx-auto max-w-3xl text-center text-[17px] md:text-[19px] leading-relaxed text-[#e8ecf3]/70">So this is that beginning. No coaching, no confusion, just a clear Day 1 plan for a normal person. If you can give four hours a day, you can start today, and I'll show you exactly how.</p>
       </div>
     </section>
-
-    <!-- SECTION 3 - FEARS INTRO -->
     <section>
       <div class="relative z-10 w-full max-w-4xl mx-auto text-center px-6">
-        <div class="reveal">
-          <h2 class="text-[clamp(34px,6vw,72px)] leading-[1.05]">First, let's kill the 3 big fears</h2>
-          <p class="mt-5 text-[17px] md:text-lg text-[#e8ecf3]/65">These stop most people before they open a book</p>
-        </div>
-        <div class="mt-12 flex justify-center">
-          <div class="h-px w-32 bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
-        </div>
+        <div class="reveal"><h2 class="text-[clamp(34px,6vw,72px)] leading-[1.05]">First, let's kill the 3 big fears</h2><p class="mt-5 text-[17px] md:text-lg text-[#e8ecf3]/65">These stop most people before they open a book</p></div>
+        <div class="mt-12 flex justify-center"><div class="h-px w-32 bg-gradient-to-r from-transparent via-white/30 to-transparent"></div></div>
       </div>
     </section>
-
-    <!-- SECTION 4 - FEAR 01 -->
     <section>
       <div class="relative z-10 w-full max-w-3xl mx-auto text-center px-6">
-        <div class="reveal">
-          <div class="num text-[64px] md:text-[88px] leading-none text-white/12 mb-8 tracking-wider">01</div>
-          <h3 class="text-[clamp(24px,3.5vw,40px)] leading-tight">I'm not from English medium / IIT / DU</h3>
-          <p class="mt-6 text-[17px] md:text-[18px] leading-relaxed text-[#e8ecf3]/80 mx-auto">
-            UPSC doesn't care where you're from. The 2023 results saw everyone from the children of daily wagers to IPS officers topping the list. Whether it's Pawan Kumar, who cleared in Hindi medium, or toppers from small-town backgrounds, the exam checks your depth of understanding, not your accent or your college's brand name.
-          </p>
-        </div>
+        <div class="reveal"><div class="num text-[64px] md:text-[88px] leading-none text-white/20 mb-8 tracking-wider">01</div><h3 class="text-[clamp(24px,3.5vw,40px)] leading-tight">I'm not from English medium / IIT / DU</h3><p class="mt-6 text-[17px] md:text-[18px] leading-relaxed text-[#e8ecf3]/80 mx-auto">UPSC doesn't care where you're from. The 2023 results saw everyone from the children of daily wagers to IPS officers topping the list. Whether it's Pawan Kumar, who cleared in Hindi medium, or toppers from small-town backgrounds, the exam checks your depth of understanding, not your accent or your college's brand name.</p></div>
       </div>
     </section>
-
-    <!-- SECTION 5 - FEAR 02 -->
     <section>
       <div class="relative z-10 w-full max-w-3xl mx-auto text-center px-6">
-        <div class="reveal">
-          <div class="num text-[64px] md:text-[88px] leading-none text-fuchsia-400/20 mb-8">02</div>
-          <h3 class="text-[clamp(24px,3.5vw,40px)] leading-tight">I need to study 15 hours a day</h3>
-          <p class="mt-6 text-[17px] md:text-[18px] leading-relaxed text-[#e8ecf3]/80 mx-auto">
-            You don't. You need four to five quality hours with full focus. There are plenty of toppers who cleared this exam with a full-time job using this exact routine. Consistency beats 'one-day-intensity' every single time.
-          </p>
-        </div>
+        <div class="reveal"><div class="num text-[64px] md:text-[88px] leading-none text-fuchsia-400/30 mb-8">02</div><h3 class="text-[clamp(24px,3.5vw,40px)] leading-tight">I need to study 15 hours a day</h3><p class="mt-6 text-[17px] md:text-[18px] leading-relaxed text-[#e8ecf3]/80 mx-auto">You don't. You need four to five quality hours with full focus. There are plenty of toppers who cleared this exam with a full-time job using this exact routine. Consistency beats 'one-day-intensity' every single time.</p></div>
       </div>
     </section>
-
-    <!-- SECTION 6 - FEAR 03 -->
     <section>
       <div class="relative z-10 w-full max-w-3xl mx-auto text-center px-6">
-        <div class="reveal">
-          <div class="num text-[64px] md:text-[88px] leading-none text-sky-400/20 mb-8">03</div>
-          <h3 class="text-[clamp(24px,3.5vw,40px)] leading-tight">I need coaching or I'll fail</h3>
-          <p class="mt-6 text-[17px] md:text-[18px] leading-relaxed text-[#e8ecf3]/80 mx-auto">
-            Coaching only gives you structure, not selection. In 2026, you can build that same structure with YouTube, standard books, and discipline for almost nothing. That's what this guide will do for you.
-          </p>
-        </div>
+        <div class="reveal"><div class="num text-[64px] md:text-[88px] leading-none text-sky-400/30 mb-8">03</div><h3 class="text-[clamp(24px,3.5vw,40px)] leading-tight">I need coaching or I'll fail</h3><p class="mt-6 text-[17px] md:text-[18px] leading-relaxed text-[#e8ecf3]/80 mx-auto">Coaching only gives you structure, not selection. In 2026, you can build that same structure with YouTube, standard books, and discipline for almost nothing. That's what this guide will do for you.</p></div>
       </div>
     </section>
-
-    <!-- SECTION 7 - BREATHER -->
     <section>
       <div class="relative z-10 w-full max-w-3xl mx-auto text-center px-6">
-        <div class="reveal">
-          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 text-xs tracking-widest text-white/60 mb-6">BREATHER</div>
-          <h2 class="text-[clamp(40px,7vw,84px)] leading-[0.95]">Take a breath.</h2>
-          <p class="mt-6 text-[18px] md:text-[20px] leading-relaxed text-[#e8ecf3]/75">
-            You are not late, and you are not underqualified. You just need a map, and I'm going to give it to you right now.
-          </p>
-        </div>
+        <div class="reveal"><div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 text-xs tracking-widest text-white/60 mb-6">BREATHER</div><h2 class="text-[clamp(40px,7vw,84px)] leading-[0.95]">Take a breath.</h2><p class="mt-6 text-[18px] md:text-[20px] leading-relaxed text-[#e8ecf3]/75">You are not late, and you are not underqualified. You just need a map, and I'm going to give it to you right now.</p></div>
       </div>
     </section>
-
-    <!-- SECTION 8 - STEP ZERO -->
     <section>
       <div class="relative z-10 w-full max-w-4xl mx-auto text-center px-6">
-        <div class="reveal">
-          <p class="text-sm tracking-[0.3em] text-white/40 uppercase">Step Zero</p>
-          <h2 class="mt-3 text-[clamp(36px,6vw,72px)] leading-[1.05]">Understand the game in one minute</h2>
-          <div class="mx-auto mt-8 h-px w-40 bg-gradient-to-r from-violet-500/0 via-violet-400/60 to-violet-500/0"></div>
-        </div>
+        <div class="reveal"><p class="text-sm tracking-[0.3em] text-white/40 uppercase">Step Zero</p><h2 class="mt-3 text-[clamp(36px,6vw,72px)] leading-[1.05]">Understand the game in one minute</h2><div class="mx-auto mt-8 h-px w-40 bg-gradient-to-r from-violet-500/0 via-violet-400/60 to-violet-500/0"></div></div>
       </div>
     </section>
-
-    <!-- SECTION 9 - THE 3 ROUNDS -->
     <section>
       <div class="relative z-10 w-full max-w-6xl mx-auto px-6">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
-          <!-- Card 1 -->
-          <div class="reveal glass rounded-[28px] p-[1px] h-full">
-            <div class="h-full rounded-[27px] bg-[#0a0a12]/60 p-7 md:p-8">
-              <div class="flex items-center gap-3">
-                <div class="h-9 w-9 grid place-items-center rounded-xl bg-violet-500/15 border border-violet-400/20">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 12h13M4 17h10" stroke="rgb(167 139 250)" stroke-width="1.6" stroke-linecap="round"/></svg>
-                </div>
-                <h3 class="text-[22px] tracking-wide">Prelims</h3>
-              </div>
-              <div class="mt-5 space-y-2.5 text-[15px] leading-relaxed text-[#e8ecf3]/75">
-                <p>May/June • 2 papers • Only GS-1 counts</p>
-                <p>10 lakh apply → 13-14k pass</p>
-                <p class="pt-2 text-[#e8ecf3]/90 font-medium">Goal: screen out</p>
-              </div>
-            </div>
-          </div>
-          <!-- Card 2 -->
-          <div class="reveal glass rounded-[28px] p-[1px] h-full" style="transition-delay:.08s">
-            <div class="h-full rounded-[27px] bg-[#0a0a12]/60 p-7 md:p-8">
-              <div class="flex items-center gap-3">
-                <div class="h-9 w-9 grid place-items-center rounded-xl bg-fuchsia-500/15 border border-fuchsia-400/20">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 19V5a2 2 0 1 2-2h10a2 2 0 0 1 2 2v14" stroke="rgb(232 121 249)" stroke-width="1.6" stroke-linecap="round"/></svg>
-                </div>
-                <h3 class="text-[22px] tracking-wide">Mains</h3>
-              </div>
-              <div class="mt-5 space-y-2.5 text-[15px] leading-relaxed text-[#e8ecf3]/75">
-                <p>September • 9 papers, 7 count</p>
-                <p>5 days of writing</p>
-                <p class="pt-2 text-[#e8ecf3]/90 font-medium">This decides rank</p>
-              </div>
-            </div>
-          </div>
-          <!-- Card 3 -->
-          <div class="reveal glass rounded-[28px] p-[1px] h-full" style="transition-delay:.16s">
-            <div class="h-full rounded-[27px] bg-[#0a0a12]/60 p-7 md:p-8">
-              <div class="flex items-center gap-3">
-                <div class="h-9 w-9 grid place-items-center rounded-xl bg-sky-500/15 border border-sky-400/20">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm-7 8v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1" stroke="rgb(125 211 252)" stroke-width="1.6" stroke-linecap="round"/></svg>
-                </div>
-                <h3 class="text-[22px] tracking-wide">Interview</h3>
-              </div>
-              <div class="mt-5 space-y-2.5 text-[15px] leading-relaxed text-[#e8ecf3]/75">
-                <p>March/April • 30 mins • 275 marks</p>
-                <p>Tests personality, not memory</p>
-              </div>
-            </div>
-          </div>
+          <div class="reveal glass rounded-[28px] p-[1px] h-full"><div class="h-full rounded-[27px] bg-[#0a0a12]/60 p-7 md:p-8"><div class="flex items-center gap-3"><div class="h-9 w-9 grid place-items-center rounded-xl bg-violet-500/15 border border-violet-400/20"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 12h13M4 17h10" stroke="rgb(167 139 250)" stroke-width="1.6" stroke-linecap="round"/></svg></div><h3 class="text-[22px] tracking-wide">Prelims</h3></div><div class="mt-5 space-y-2.5 text-[15px] leading-relaxed text-[#e8ecf3]/75"><p>May/June • 2 papers • Only GS-1 counts</p><p>10 lakh apply → 13-14k pass</p><p class="pt-2 text-[#e8ecf3]/90 font-medium">Goal: screen out</p></div></div></div>
+          <div class="reveal glass rounded-[28px] p-[1px] h-full" style="transition-delay:.08s"><div class="h-full rounded-[27px] bg-[#0a0a12]/60 p-7 md:p-8"><div class="flex items-center gap-3"><div class="h-9 w-9 grid place-items-center rounded-xl bg-fuchsia-500/15 border border-fuchsia-400/20"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 19V5M5 19h14" stroke="rgb(232 121 249)" stroke-width="1.6" stroke-linecap="round"/></svg></div><h3 class="text-[22px] tracking-wide">Mains</h3></div><div class="mt-5 space-y-2.5 text-[15px] leading-relaxed text-[#e8ecf3]/75"><p>September • 9 papers, 7 count</p><p>5 days of writing</p><p class="pt-2 text-[#e8ecf3]/90 font-medium">This decides rank</p></div></div></div>
+          <div class="reveal glass rounded-[28px] p-[1px] h-full" style="transition-delay:.16s"><div class="h-full rounded-[27px] bg-[#0a0a12]/60 p-7 md:p-8"><div class="flex items-center gap-3"><div class="h-9 w-9 grid place-items-center rounded-xl bg-sky-500/15 border border-sky-400/20"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm-7 8v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1" stroke="rgb(125 211 252)" stroke-width="1.6" stroke-linecap="round"/></svg></div><h3 class="text-[22px] tracking-wide">Interview</h3></div><div class="mt-5 space-y-2.5 text-[15px] leading-relaxed text-[#e8ecf3]/75"><p>March/April • 30 mins • 275 marks</p><p>Tests personality, not memory</p></div></div></div>
         </div>
       </div>
     </section>
-
-    <!-- SECTION 10 - TIMELINE -->
     <section>
       <div class="relative z-10 w-full max-w-5xl mx-auto px-6">
-        <div class="reveal text-center">
-          <h2 class="text-[clamp(32px,5.5vw,64px)]">Your timeline</h2>
-          <p class="mt-4 text-[17px] md:text-[19px] text-[#e8ecf3]/75">
-            Total seats: ~1,000 yearly. Start April 2026 → First attempt June 2027 = 14 months. Perfect.
-          </p>
-        </div>
-        <div class="reveal mt-10 md:mt-12">
-          <div class="relative glass-strong rounded-[28px] p-[1px] overflow-hidden">
-            <div class="absolute inset-0 bg-gradient-to-r from-violet-600/10 via-fuchsia-600/10 to-blue-600/10"></div>
-            <div class="relative rounded-[27px] bg-[#07070c]/70 px-6 py-8 md:px-10 md:py-10">
-              <div class="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6">
-                <div class="shrink-0 h-11 w-11 grid place-items-center rounded-2xl bg-white/8 border border-white/15">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 8v5l3 2" stroke="white" stroke-opacity=".9" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="white" stroke-opacity=".25" stroke-width="1.2"/></svg>
-                </div>
-                <p class="text-[18px] md:text-[20px] leading-snug">
-                  <span class="font-semibold text-white">Next 8 months:</span> only build base. Integrate Mains with Prelims. <span class="text-white/90">Don't worry about Interview now.</span>
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="reveal mt-14 flex justify-center">
-          <div class="text-[12px] tracking-[0.2em] text-white/30 uppercase">End of Part 1 — Foundation Map</div>
-        </div>
+        <div class="reveal text-center"><h2 class="text-[clamp(32px,5.5vw,64px)]">Your timeline</h2><p class="mt-4 text-[17px] md:text-[19px] text-[#e8ecf3]/75">Total seats: ~1,000 yearly. Start April 2026 → First attempt June 2027 = 14 months. Perfect.</p></div>
+        <div class="reveal mt-10 md:mt-12"><div class="relative glass-strong rounded-[28px] p-[1px] overflow-hidden"><div class="absolute inset-0 bg-gradient-to-r from-violet-600/10 via-fuchsia-600/10 to-blue-600/10"></div><div class="relative rounded-[27px] bg-[#07070c]/70 px-6 py-8 md:px-10 md:py-10"><div class="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6"><div class="shrink-0 h-11 w-11 grid place-items-center rounded-2xl bg-white/8 border border-white/15"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 8v5l3 2" stroke="white" stroke-opacity=".9" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="white" stroke-opacity=".25" stroke-width="1.2"/></svg></div><p class="text-[18px] md:text-[20px] leading-snug"><span class="font-semibold text-white">Next 8 months:</span> only build base. Integrate Mains with Prelims. <span class="text-white/90">Don't worry about Interview now.</span></p></div></div></div></div>
+        <div class="reveal mt-14 flex justify-center"><div class="text-[12px] tracking-[0.2em] text-white/30 uppercase">End of Part 1 — Foundation Map</div></div>
       </div>
     </section>
-
   </main>
-
 <script>
-  // typewriter
   const txt = "Starting from zero? Let's build your foundation in simple steps.";
-  const el = document.getElementById('type');
-  let i = 0;
-  function type(){ if(i<=txt.length){ el.textContent = txt.slice(0,i); i++; setTimeout(type, 28+Math.random()*22);} }
-  setTimeout(type, 400);
-
-  // reveal on scroll
-  const io = new IntersectionObserver((entries)=>{
-    entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target);} })
-  },{threshold:.2});
-  document.querySelectorAll('.reveal').forEach(n=>io.observe(n));
-
-  // progress
-  const scroller = document.getElementById('scroll');
-  const prog = document.getElementById('progress');
-  scroller.addEventListener('scroll', ()=>{
-    const h = scroller.scrollHeight - scroller.clientHeight;
-    const p = h>0 ? scroller.scrollTop / h : 0;
-    prog.style.transform = `scaleX(${p})`;
-  }, {passive:true});
-
-  // keyboard snap assist
-  window.addEventListener('keydown', (e)=>{
-    if(e.key === 'ArrowDown'){ scroller.scrollBy({top: window.innerHeight*0.9, behavior:'smooth'}); }
-    if(e.key === 'ArrowUp'){ scroller.scrollBy({top: -window.innerHeight*0.9, behavior:'smooth'}); }
-  });
+  const el = document.getElementById('type'); let i=0; function type(){if(i<=txt.length){el.textContent=txt.slice(0,i);i++;setTimeout(type,28+Math.random()*22);}} setTimeout(type,400);
+  const io=new IntersectionObserver((entries)=>{entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}})},{threshold:.2}); document.querySelectorAll('.reveal').forEach(n=>io.observe(n));
+  const scroller=document.getElementById('scroll'); const prog=document.getElementById('progress'); scroller.addEventListener('scroll',()=>{const h=scroller.scrollHeight-scroller.clientHeight; const p=h>0?scroller.scrollTop/h:0; prog.style.transform=`scaleX(${p})`;},{passive:true});
+  window.addEventListener('keydown',(e)=>{if(e.key==='ArrowDown'){scroller.scrollBy({top:window.innerHeight*0.9,behavior:'smooth'});} if(e.key==='ArrowUp'){scroller.scrollBy({top:-window.innerHeight*0.9,behavior:'smooth'});}});
+  // Fix iOS rubber band
+  let startY=0; scroller.addEventListener('touchstart',e=>{startY=e.touches[0].clientY},{passive:true});
 </script>
 </body>
 </html>
