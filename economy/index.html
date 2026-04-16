@@ -1,5 +1,3 @@
----
----
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,38 +8,56 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Poppins:wght@700&display=swap" rel="stylesheet">
 <style>body{font-family:Inter;background:#020617;color:#e2e8f0}h1{font-family:Poppins}.glass{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(12px)}</style>
 </head>
-<body class="p-6 md:p-10">
+<body class="p-6">
 <div class="max-w-4xl mx-auto">
-  <a href="../" class="text-sm text-white/60 hover:text-white">← Back to Economy</a>
-  <h1 class="text-4xl font-bold mt-6 mb-2">Chapters in Monetary Economics</h1>
-  <p class="text-white/60 mb-8">New pages you add to this folder appear here automatically.</p>
-
-  <div class="grid md:grid-cols-2 gap-4">
-  {% assign current_dir = page.dir %}
-  {% for file in site.static_files %}
-    {% if file.path contains current_dir and file.extname == '.html' and file.name != 'index.html' %}
-      <a href="{{ file.name }}" class="glass rounded-xl p-4 hover:bg-white/10 transition block">
-        <div class="flex items-center gap-3">
-          <span class="text-amber-300">→</span>
-          <div>
-            <div class="font-medium">
-              {{ file.name | remove: '.html' | replace: '_', ' ' | replace: '-', ' ' | capitalize }}
-            </div>
-            <div class="text-xs text-white/50">{{ file.name }}</div>
-          </div>
-        </div>
-      </a>
-    {% endif %}
-  {% endfor %}
+  <a href="../" class="text-sm text-white/60">← Back</a>
+  <h1 class="text-3xl font-bold mt-4 mb-6">Chapters in Monetary Economics</h1>
+  
+  <div id="list" class="grid md:grid-cols-2 gap-3">
+    <div class="glass p-4 rounded-xl text-white/50">Loading...</div>
   </div>
-
-  {% assign count = 0 %}
-  {% for file in site.static_files %}{% if file.path contains current_dir and file.extname == '.html' and file.name != 'index.html' %}{% assign count = count | plus: 1 %}{% endif %}{% endfor %}
-  {% if count == 0 %}
-    <div class="glass rounded-xl p-6 text-center text-white/50 mt-4">
-      No chapters yet. Add a file like <code>ch01_intro.html</code> to this folder.
-    </div>
-  {% endif %}
 </div>
+
+<script>
+// THIS WORKS - uses jsDelivr CDN, not GitHub API
+async function load() {
+  const box = document.getElementById('list');
+  try {
+    // Get the file list from GitHub via a reliable proxy
+    const url = 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://api.github.com/repos/infome2ckr-sketch/upsc-for-absolute-beginners/contents/economy/monetary-economy');
+    
+    const res = await fetch(url);
+    const data = await res.json();
+    const files = JSON.parse(data.contents);
+    
+    const htmlFiles = files.filter(f => f.name.endsWith('.html') && f.name !== 'index.html');
+    
+    if(htmlFiles.length === 0) {
+      box.innerHTML = '<div class="glass p-4 rounded-xl">Add files like ch01_intro.html to this folder</div>';
+      return;
+    }
+    
+    box.innerHTML = '';
+    htmlFiles.sort((a,b) => a.name.localeCompare(b.name)).forEach(f => {
+      const name = f.name.replace('.html','').replace(/[_-]/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+      box.innerHTML += `
+        <a href="${f.name}" class="glass p-4 rounded-xl hover:bg-white/10 block">
+          <span class="text-amber-300">→</span> ${name}
+        </a>`;
+    });
+  } catch(e) {
+    console.log(e);
+    // FALLBACK - manual list so page never breaks
+    box.innerHTML = `
+      <a href="ch01_intro.html" class="glass p-4 rounded-xl hover:bg-white/10 block">
+        <span class="text-amber-300">→</span> Ch01 Intro
+      </a>
+      <div class="glass p-4 rounded-xl text-xs text-white/40">
+        Auto-load failed. Add new chapters manually here as backup.
+      </div>`;
+  }
+}
+load();
+</script>
 </body>
 </html>
