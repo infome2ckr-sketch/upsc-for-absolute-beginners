@@ -1,246 +1,55 @@
-
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Economy for UPSC | Absolute Beginners</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@700;800&display=swap" rel="stylesheet">
-<style>
-  :root { color-scheme: dark; }
-  html, body { height: 100%; }
-  body {
-    font-family: 'Inter', sans-serif;
-    background: #020617;
-    overflow-x: hidden;
-  }
-  h1, h2, h3 { font-family: 'Poppins', sans-serif; }
- .bg-grid {
-    background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-                      linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-    background-size: 48px 48px;
-  }
- .glass {
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
-  }
- .card-hover {
-    transition: all.3s cubic-bezier(.2,.8,.2,1);
-  }
- .card-hover:hover {
-    transform: translateY(-4px);
-    background: rgba(255,255,255,0.08);
-    border-color: rgba(250,204,21,0.3);
-  }
-</style>
-</head>
-<body class="text-white selection:bg-amber-300/30">
-<div class="relative min-h-screen w-full">
-  <!-- Background -->
-  <div class="fixed inset-0 bg-gradient-to-br from-[#020617] via-[#0f172a] to-[#1e1b4b]"></div>
-  <div class="fixed inset-0 bg-grid opacity-30 [mask-image:radial-gradient(ellipse_at_top,black_50%,transparent_90%)]"></div>
-  <div class="fixed -top-40 -right-40 w-[400px] h-[400px] bg-amber-500/10 rounded-full blur-[100px]"></div>
-  <div class="fixed -bottom-40 -left-40 w-[400px] h-[400px] bg-teal-500/10 rounded-full blur-[100px]"></div>
-
-  <!-- Content -->
-  <div class="relative z-10">
-    <!-- Nav -->
-    <nav class="max-w-6xl mx-auto px-6 py-6 flex items-center justify-between">
-      <div class="flex items-center gap-2">
-        <span class="w-2 h-2 rounded-full bg-amber-400"></span>
-        <span class="text-sm font-semibold tracking-wide">UPSC ECONOMY</span>
-      </div>
-      <a href="../" class="text-sm text-white/60 hover:text-white transition">← Back to Home</a>
-    </nav>
-
-    <!-- Hero -->
-    <section class="max-w-6xl mx-auto px-6 pt-8 pb-16 md:pt-16 md:pb-24 text-center">
-      <div class="inline-flex items-center gap-2 glass rounded-full px-4 py-2 mb-6">
-        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span class="text-[11px] tracking-[0.25em] text-white/70 font-medium">MADE FOR ASPIRANTS • ZERO FLUFF</span>
-      </div>
-      <h1 class="text-[clamp(40px,8vw,96px)] font-extrabold leading-[0.9] tracking-tight">
-        Economy that
-        <span class="block mt-1 bg-gradient-to-r from-amber-300 via-teal-300 to-violet-400 bg-clip-text text-transparent">actually makes sense</span>
-      </h1>
-      <p class="mt-6 text-lg md:text-xl text-white/70 max-w-2xl mx-auto">
-        No jargon walls. No 50-page PDFs. Just clear concepts, current links, and exactly what UPSC asks. Start anywhere, learn in 10-min chunks.
-      </p>
-      <div class="mt-10 flex flex-wrap justify-center gap-3">
-        <a href="monetary-economics.html" class="glass card-hover px-6 py-3 rounded-xl font-semibold bg-amber-400/10 border-amber-400/30">
-          Start: Monetary Economics →
-        </a>
-        <a href="#topics" class="glass card-hover px-6 py-3 rounded-xl font-semibold">
-          Browse All Topics
-        </a>
-      </div>
-    </section>
-
-    <!-- Quick Stats -->
-    <section class="max-w-6xl mx-auto px-6 pb-16">
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="glass rounded-2xl p-5 text-center">
-          <div class="text-3xl font-bold text-amber-300">20+</div>
-          <div class="text-xs text-white/60 mt-1">Marks in Prelims</div>
-        </div>
-        <div class="glass rounded-2xl p-5 text-center">
-          <div class="text-3xl font-bold text-teal-300">15M</div>
-          <div class="text-xs text-white/60 mt-1">Avg in Mains GS3</div>
-        </div>
-        <div class="glass rounded-2xl p-5 text-center">
-          <div class="text-3xl font-bold text-violet-300">100%</div>
-          <div class="text-xs text-white/60 mt-1">CA Linkage</div>
-        </div>
-        <div class="glass rounded-2xl p-5 text-center">
-          <div class="text-3xl font-bold">10 min</div>
-          <div class="text-xs text-white/60 mt-1">Per Concept</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Topics -->
-    <section id="topics" class="max-w-6xl mx-auto px-6 pb-20">
-      <h2 class="text-3xl md:text-4xl font-bold mb-8 text-center">Pick a lane. Start learning.</h2>
-      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-
-        <a href="monetary-economics.html" class="glass card-hover rounded-3xl p-6 block">
-          <div class="text-2xl mb-3">🏦</div>
-          <h3 class="text-xl font-bold mb-2">Monetary Economics</h3>
-          <p class="text-white/70 text-sm leading-relaxed">RBI, Repo, Inflation, Money Supply. The core UPSC loves. Auto-deck with voice.</p>
-          <div class="mt-4 text-xs font-semibold text-amber-300">LIVE NOW →</div>
-        </a>
-
-        <div class="glass rounded-3xl p-6 opacity-60">
-          <div class="text-2xl mb-3">📊</div>
-          <h3 class="text-xl font-bold mb-2">Fiscal Policy & Budget</h3>
-          <p class="text-white/70 text-sm leading-relaxed">Deficit, FRBM, Tax, Expenditure. Coming next week.</p>
-          <div class="mt-4 text-xs font-semibold text-white/50">COMING SOON</div>
-        </div>
-
-        <div class="glass rounded-3xl p-6 opacity-60">
-          <div class="text-2xl mb-3">🌾</div>
-          <h3 class="text-xl font-bold mb-2">Agriculture Economics</h3>
-          <p class="text-white/70 text-sm leading-relaxed">MSP, PDS, Subsidies, Food Security. In pipeline.</p>
-          <div class="mt-4 text-xs font-semibold text-white/50">COMING SOON</div>
-        </div>
-
-        <div class="glass rounded-3xl p-6 opacity-60">
-          <div class="text-2xl mb-3">🌍</div>
-          <h3 class="text-xl font-bold mb-2">External Sector</h3>
-          <p class="text-white/70 text-sm leading-relaxed">BoP, CAD, Forex, WTO, FDI. Drafting.</p>
-          <div class="mt-4 text-xs font-semibold text-white/50">COMING SOON</div>
-        </div>
-
-        <div class="glass rounded-3xl p-6 opacity-60">
-          <div class="text-2xl mb-3">📈</div>
-          <h3 class="text-xl font-bold mb-2">Growth & Development</h3>
-          <p class="text-white/70 text-sm leading-relaxed">GDP, Poverty, Unemployment, Indices.</p>
-          <div class="mt-4 text-xs font-semibold text-white/50">COMING SOON</div>
-        </div>
-
-        <div class="glass rounded-3xl p-6 opacity-60">
-          <div class="text-2xl mb-3">🏭</div>
-          <h3 class="text-xl font-bold mb-2">Industry & Infra</h3>
-          <p class="text-white/70 text-sm leading-relaxed">IIP, PLI, Disinvestment, Energy.</p>
-          <div class="mt-4 text-xs font-semibold text-white/50">COMING SOON</div>
-        </div>
-
-      </div>
-    </section>
-
-    <!-- 1-min wins -->
-    <section class="max-w-6xl mx-auto px-6 pb-20">
-      <h2 class="text-3xl md:text-4xl font-bold mb-8 text-center">1-Minute Wins</h2>
-      <div class="grid md:grid-cols-3 gap-4">
-        <div class="glass rounded-2xl p-5">
-          <div class="text-amber-300 text-xs font-bold tracking-widest mb-2">FACT</div>
-          <p class="text-sm text-white/80">RBI's inflation target is 4% ±2%. If CPI stays above 6% or below 2% for 3 quarters, RBI writes to Govt.</p>
-        </div>
-        <div class="glass rounded-2xl p-5">
-          <div class="text-teal-300 text-xs font-bold tracking-widest mb-2">TRICK</div>
-          <p class="text-sm text-white/80">M3 = M1 + Time Deposits. M3 > M1 > M0 in size. M0 > M1 in liquidity. Prelims asks this every year.</p>
-        </div>
-        <div class="glass rounded-2xl p-5">
-          <div class="text-violet-300 text-xs font-bold tracking-widest mb-2">CURRENT</div>
-          <p class="text-sm text-white/80">April 2026: Repo 5.25%, Stance Neutral, Governor Sanjay Malhotra. CPI 6.9% — above tolerance.</p>
-        </div>
-      </div>
-    </section>
-<!-- Topics - 8 Pillars -->
-<section id="topics" class="max-w-6xl mx-auto px-6 pb-20">
-  <h2 class="text-3xl md:text-4xl font-bold mb-3 text-center">The 8 Pillars</h2>
-  <p class="text-center text-white/60 mb-10 max-w-2xl mx-auto">I analysed 10 years of PYQs. 80% of Economy comes from these. Master them, ignore the noise.</p>
-  <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-
-    <a href="monetary-economics.html" class="glass card-hover rounded-2xl p-5 block border-l-4 border-amber-400">
-      <div class="flex justify-between items-start">
-        <div class="text-2xl">🏦</div>
-        <span class="text-xs px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-300">LIVE</span>
-      </div>
-      <h3 class="font-bold mt-2">RBI & Monetary</h3>
-      <p class="text-xs text-white/60 mt-1">Repo, LAF, Money Supply</p>
-      <div class="mt-3 h-1 bg-white/10 rounded-full overflow-hidden">
-        <div class="h-full w-full bg-amber-400"></div>
-      </div>
-    </a>
-
-    <a href="#" class="glass card-hover rounded-2xl p-5 block border-l-4 border-teal-400 opacity-90">
-      <div class="text-2xl">📈</div>
-      <h3 class="font-bold mt-2">Inflation & Money</h3>
-      <p class="text-xs text-white/60 mt-1">CPI, WPI, M0/M1/M3</p>
-      <div class="mt-3 h-1 bg-white/10 rounded-full overflow-hidden"><div class="h-full w-0 bg-teal-400"></div></div>
-    </a>
-
-    <a href="#" class="glass card-hover rounded-2xl p-5 block border-l-4 border-violet-400 opacity-90">
-      <div class="text-2xl">💱</div>
-      <h3 class="font-bold mt-2">BoP & Forex</h3>
-      <p class="text-xs text-white/60 mt-1">CAD, FDI, Rupee</p>
-      <div class="mt-3 h-1 bg-white/10 rounded-full overflow-hidden"><div class="h-full w-0 bg-violet-400"></div></div>
-    </a>
-
-    <a href="#" class="glass card-hover rounded-2xl p-5 block border-l-4 border-white/30 opacity-90">
-      <div class="text-2xl">📊</div>
-      <h3 class="font-bold mt-2">Budget & Fiscal</h3>
-      <p class="text-xs text-white/60 mt-1">Deficit, FRBM, Tax</p>
-      <div class="mt-3 h-1 bg-white/10 rounded-full overflow-hidden"><div class="h-full w-0 bg-white/40"></div></div>
-    </a>
-
-    <a href="#" class="glass card-hover rounded-2xl p-5 block border-l-4 border-amber-400/50 opacity-70">
-      <div class="text-2xl">🌾</div>
-      <h3 class="font-bold mt-2">MSP & Agri</h3>
-      <p class="text-xs text-white/60 mt-1">MSP, PDS, WTO</p>
-    </a>
-
-    <a href="#" class="glass card-hover rounded-2xl p-5 block border-l-4 border-teal-400/50 opacity-70">
-      <div class="text-2xl">📉</div>
-      <h3 class="font-bold mt-2">Markets</h3>
-      <p class="text-xs text-white/60 mt-1">Bonds, SEBI, G-Sec</p>
-    </a>
-
-    <a href="#" class="glass card-hover rounded-2xl p-5 block border-l-4 border-violet-400/50 opacity-70">
-      <div class="text-2xl">🎯</div>
-      <h3 class="font-bold mt-2">Schemes</h3>
-      <p class="text-xs text-white/60 mt-1">Economy-linked only</p>
-    </a>
-
-    <a href="#" class="glass card-hover rounded-2xl p-5 block border-l-4 border-white/20 opacity-70">
-      <div class="text-2xl">💀</div>
-      <h3 class="font-bold mt-2">Concept Traps</h3>
-      <p class="text-xs text-white/60 mt-1">GDP, GVA, curves</p>
-    </a>
-
-  </div>
-</section>
-    <!-- Footer -->
-    <footer class="border-t border-white/10 py-10 text-center">
-      <p class="text-white/60 text-sm">Built for absolute beginners. No coaching fees. Just clarity.</p>
-      <p class="text-white/40 text-xs mt-2">Updated April 2026 • UPSC CSE Economy</p>
-    </footer>
-  </div>
+<div id="subpages" class="grid md:grid-cols-2 gap-3 mt-6">
+  <p class="text-white/50">Loading chapters...</p>
 </div>
-</body>
-</html>
+
+<script>
+async function loadChapters() {
+  const user = 'infome2ckr-sketch';
+  const repo = 'upsc-for-absolute-beginners';
+  const path = 'economy/monetary-economy'; // <-- YOUR ACTUAL FOLDER
+  
+  const box = document.getElementById('subpages');
+  
+  try {
+    const res = await fetch(`https://api.github.com/repos/${user}/${repo}/contents/${path}`);
+    if(!res.ok) throw new Error('GitHub API error');
+    
+    const files = await res.json();
+    
+    const chapters = files
+      .filter(f => f.type === 'file' && f.name.endsWith('.html') && f.name !== 'index.html')
+      .sort((a,b) => a.name.localeCompare(b.name));
+    
+    if(chapters.length === 0) {
+      box.innerHTML = '<p class="text-white/50">No chapters yet. Add .html files to this folder.</p>';
+      return;
+    }
+    
+    box.innerHTML = '';
+    chapters.forEach(f => {
+      const cleanName = f.name.replace('.html','')
+        .replace(/^ch\d+_?/i,'') // removes ch01_
+        .replace(/[-_]/g,' ')
+        .replace(/\b\w/g, c => c.toUpperCase());
+      
+      const a = document.createElement('a');
+      a.href = f.name;
+      a.className = 'block p-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition';
+      a.innerHTML = `
+        <div class="flex items-center gap-3">
+          <span class="text-amber-300">→</span>
+          <div>
+            <div class="font-medium">${cleanName || 'Chapter'}</div>
+            <div class="text-xs text-white/50">${f.name}</div>
+          </div>
+        </div>`;
+      box.appendChild(a);
+    });
+    
+  } catch(err) {
+    console.error(err);
+    box.innerHTML = `<p class="text-red-400">Failed to load. Check: 1) folder name is correct, 2) files end with .html, 3) you're online.</p>`;
+  }
+}
+loadChapters();
+</script>
