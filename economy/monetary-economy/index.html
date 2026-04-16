@@ -1,0 +1,41 @@
+<!-- AUTO LIST OF SUBPAGES -->
+<div class="glass rounded-2xl p-6 mt-10">
+  <h3 class="font-bold text-lg mb-4">Chapters in Monetary Economics</h3>
+  <div id="subpages" class="grid md:grid-cols-2 gap-3 text-sm">
+    <p class="text-white/50">Loading...</p>
+  </div>
+</div>
+
+<script>
+async function loadSubpages() {
+  const user = 'infome2ckr-sketch';
+  const repo = 'upsc-for-absolute-beginners';
+  const path = 'economy/monetary-economics';
+  
+  try {
+    const res = await fetch(`https://api.github.com/repos/${user}/${repo}/contents/${path}`);
+    const files = await res.json();
+    const container = document.getElementById('subpages');
+    container.innerHTML = '';
+    
+    files
+      .filter(f => f.name.endsWith('.html') && f.name !== 'index.html')
+      .sort((a,b) => a.name.localeCompare(b.name))
+      .forEach(f => {
+        const title = f.name.replace('.html','').replace(/-/g,' ').replace(/\b\w/g, l => l.toUpperCase());
+        const link = document.createElement('a');
+        link.href = f.name;
+        link.className = 'block p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition';
+        link.innerHTML = `<span class="text-amber-300">→</span> ${title}`;
+        container.appendChild(link);
+      });
+      
+    if(container.children.length === 0) {
+      container.innerHTML = '<p class="text-white/50">No sub-pages yet. Add a .html file to this folder.</p>';
+    }
+  } catch(e) {
+    document.getElementById('subpages').innerHTML = '<p class="text-red-400">Could not load list. Check internet.</p>';
+  }
+}
+loadSubpages();
+</script>
