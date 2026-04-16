@@ -1,6 +1,715 @@
-   /monetary-economics/
-     index.html   ← your deck code
-     /audio/
-       a7f3k2.mp3
-       b9x1p4.mp3
-       ...
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Playables SDK -->
+<script>// Playables SDK v1.0.0
+// Game lifecycle bridge: rAF-based game-ready detection + event communication
+(function() {
+  'use strict';
+
+  // Idempotency: skip if already initialized (e.g., server-side injection
+  // followed by client-side inject-javascript via the Bloks webview component).
+  if (window.playablesSDK) return;
+
+  var HANDLER_NAME = 'playablesGameEventHandler';
+  var ANDROID_BRIDGE_NAME = '_MetaPlayablesBridge';
+  var RAF_FRAME_THRESHOLD = 3;
+
+  var gameReadySent = false;
+  var firstInteractionSent = false;
+  var errorSent = false;
+  var frameCount = 0;
+  var originalRAF = window.requestAnimationFrame;
+
+  // --- Transport Layer ---
+
+  function hasIOSBridge() {
+    return !!(window.webkit &&
+              window.webkit.messageHandlers &&
+              window.webkit.messageHandlers[HANDLER_NAME]);
+  }
+
+  function hasAndroidBridge() {
+    return !!(window[ANDROID_BRIDGE_NAME] &&
+              typeof window[ANDROID_BRIDGE_NAME].postEvent === 'function');
+  }
+
+  function isInIframe() {
+    return !!(window.parent && window.parent !== window);
+  }
+
+  function sendEvent(eventName, payload) {
+    var message = {
+      type: eventName,
+      payload: payload || {},
+      timestamp: Date.now()
+    };
+
+    if (hasIOSBridge()) {
+      try {
+        window.webkit.messageHandlers[HANDLER_NAME].postMessage(message);
+      } catch (e) { /* ignore */ }
+      return;
+    }
+
+    if (hasAndroidBridge()) {
+    try {
+      var p = payload || {};
+      p.__secureToken = window.__fbAndroidBridgeAuthToken || '';
+      window[ANDROID_BRIDGE_NAME].postEvent(
+        eventName,
+        JSON.stringify(p)
+      );
+    } catch (e) { /* ignore */ }
+    return;
+  }
+
+    if (isInIframe()) {
+      try {
+        window.parent.postMessage(message, '*');
+      } catch (e) { /* ignore */ }
+      return;
+    }
+  }
+
+  // --- rAF Game-Ready Detection ---
+
+  function onFrame() {
+    if (gameReadySent) return;
+
+    frameCount++;
+    if (frameCount >= RAF_FRAME_THRESHOLD) {
+      gameReadySent = true;
+      sendEvent('game_ready', {
+        frame_count: frameCount,
+        detected_at: Date.now()
+      });
+      return;
+    }
+
+    originalRAF.call(window, onFrame);
+  }
+
+  if (originalRAF) {
+    window.requestAnimationFrame = function(callback) {
+      if (!gameReadySent) {
+        return originalRAF.call(window, function(timestamp) {
+          frameCount++;
+          if (frameCount >= RAF_FRAME_THRESHOLD && !gameReadySent) {
+            gameReadySent = true;
+            sendEvent('game_ready', {
+              frame_count: frameCount,
+              detected_at: Date.now()
+            });
+          }
+          callback(timestamp);
+        });
+      }
+      return originalRAF.call(window, callback);
+    };
+  }
+
+  // --- First User Interaction Detection ---
+
+  function setupFirstInteractionDetection() {
+    var events = ['touchstart', 'mousedown', 'keydown'];
+
+    function onFirstInteraction() {
+      if (firstInteractionSent) return;
+      firstInteractionSent = true;
+      sendEvent('user_interaction_start', null);
+
+      for (var i = 0; i < events.length; i++) {
+        document.removeEventListener(events[i], onFirstInteraction, true);
+      }
+    }
+
+    for (var i = 0; i < events.length; i++) {
+      document.addEventListener(events[i], onFirstInteraction, true);
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupFirstInteractionDetection);
+  } else {
+    setupFirstInteractionDetection();
+  }
+
+  // --- Auto Error Capture ---
+
+  window.addEventListener('error', function(event) {
+    if (errorSent) return;
+    errorSent = true;
+    sendEvent('error', {
+      message: event.message || 'Unknown error',
+      source: event.filename || '',
+      lineno: event.lineno || 0,
+      colno: event.colno || 0,
+      auto_captured: true
+    });
+  });
+
+  window.addEventListener('unhandledrejection', function(event) {
+    if (errorSent) return;
+    errorSent = true;
+    var reason = event.reason;
+    sendEvent('error', {
+      message: (reason instanceof Error) ? reason.message : String(reason),
+      type: 'unhandled_promise_rejection',
+      auto_captured: true
+    });
+  });
+
+  // --- Public API ---
+
+  window.playablesSDK = {
+    complete: function(score) {
+      sendEvent('game_ended', {
+        score: score,
+        completed: true
+      });
+    },
+
+    error: function(message) {
+      if (errorSent) return;
+      errorSent = true;
+      sendEvent('error', {
+        message: message || 'Unknown error',
+        auto_captured: false
+      });
+    },
+
+    sendEvent: function(eventName, payload) {
+      if (!eventName || typeof eventName !== 'string') return;
+      sendEvent(eventName, payload);
+    }
+  };
+
+  // Kick off rAF detection in case no game code calls rAF immediately
+  if (originalRAF) {
+    originalRAF.call(window, onFrame);
+  }
+})();</script>
+<script>window.Intl=window.Intl||{};Intl.t=function(s){return(Intl._locale&&Intl._locale[s])||s;};</script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>UPSC Monetary Economics – Auto Deck</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root { color-scheme: dark; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #020617;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+  h1, h2, h3 { font-family: 'Poppins', sans-serif; }
+  .bg-grid {
+    background-image: linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+    background-size: 56px 56px;
+  }
+  .glass {
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    background: rgba(255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+  }
+  .gold { color: #facc15; }
+  .teal { color: #2dd4bf; }
+  .violet { color: #a78bfa; }
+  .slide {
+    position: absolute; inset: 0;
+    opacity: 0; pointer-events: none;
+    transition: opacity .8s cubic-bezier(.2,.8,.2,1);
+  }
+  .slide.active { opacity: 1; pointer-events: auto; }
+  .fragment {
+    opacity: 0;
+    transition: all .7s cubic-bezier(.2,.8,.2,1);
+    will-change: transform, opacity;
+  }
+  .fragment.fade-up { transform: translateY(28px); }
+  .fragment.zoom-in { transform: scale(.88); }
+  .fragment.slide-left { transform: translateX(40px); }
+  .fragment.visible { opacity: 1; transform: none; }
+  .trap-pulse { animation: trappulse 2s infinite; }
+  @keyframes trappulse {
+    0%,100% { box-shadow: 0 0 0 0 rgba(250,204,21,0.5); }
+    50% { box-shadow: 0 0 0 14px rgba(250,204,21,0); }
+  }
+  .pipe-flow {
+    stroke-dasharray: 6 14;
+    animation: flow 1.2s linear infinite;
+  }
+  @keyframes flow { to { stroke-dashoffset: -20; } }
+</style>
+</head>
+<body class="text-white selection:bg-amber-300/30">
+<div id="deck" class="relative w-screen h-screen overflow-hidden">
+  <!-- Background -->
+  <div class="absolute inset-0 bg-gradient-to-br from-[#020617] via-[#0f172a] to-[#1e1b4b]"></div>
+  <div class="absolute inset-0 bg-grid opacity-40 [mask-image:radial-gradient(ellipse_at_center,black_65%,transparent_100%)]"></div>
+  <div class="absolute -top-40 -right-40 w-[500px] h-[500px] bg-violet-600/20 rounded-full blur-[120px]"></div>
+  <div class="absolute -bottom-40 -left-40 w-[500px] h-[500px] bg-teal-600/20 rounded-full blur-[120px]"></div>
+
+  <!-- SLIDE 1: Title -->
+  <div class="slide active" data-index="0">
+    <div class="relative z-10 h-full flex items-center justify-center text-center px-6">
+      <div class="max-w-5xl">
+        <div class="fragment fade-up">
+          <div class="inline-flex items-center gap-2 glass rounded-full px-4 py-2 mb-8">
+            <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+            <span class="text-[11px] tracking-[0.25em] text-white/70 font-medium">UPSC CSE • ECONOMY</span>
+          </div>
+        </div>
+        <h1 class="fragment zoom-in text-[clamp(42px,9vw,112px)] font-extrabold leading-[0.85] tracking-tight">
+          MONETARY
+          <span class="block mt-2 bg-gradient-to-r from-amber-300 via-teal-300 to-violet-400 bg-clip-text text-transparent pb-4">ECONOMICS</span>
+        </h1>
+        <p class="fragment fade-up mt-6 text-xl md:text-2xl text-white/70 max-w-3xl mx-auto">Prelims to Interview — RBI, Money, Inflation & Transmission in one deck</p>
+        <div class="fragment fade-up mt-14 grid grid-cols-3 gap-4 max-w-2xl mx-auto">
+          <div class="glass rounded-2xl p-5"><div class="text-3xl font-bold gold">4</div><div class="text-xs text-white/60 mt-1">Pillars</div></div>
+          <div class="glass rounded-2xl p-5"><div class="text-3xl font-bold teal">4±2%</div><div class="text-xs text-white/60 mt-1">Target</div></div>
+          <div class="glass rounded-2xl p-5"><div class="text-3xl font-bold violet">11</div><div class="text-xs text-white/60 mt-1">Slides</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 2: Why UPSC loves -->
+  <div class="slide" data-index="1">
+    <div class="relative z-10 h-full flex items-center">
+      <div class="max-w-6xl mx-auto px-6 md:px-10 w-full">
+        <h2 class="fragment fade-up text-4xl md:text-6xl font-bold mb-3">Why UPSC <span class="gold">Loves</span> It</h2>
+        <p class="fragment fade-up text-white/60 mb-12 text-lg">Concept + Current Affairs = every year</p>
+        <div class="grid md:grid-cols-2 gap-5">
+          <div class="fragment slide-left glass rounded-3xl p-7 border-l-4 border-amber-400/80">
+            <h3 class="text-xl font-semibold text-amber-200 mb-2">🎯 Prelims Fixture</h3>
+            <p class="text-white/75">Repo, MSF, SDF, CRR, SLR, M0/M1/M3, CPI vs WPI – 2 to 3 direct questions yearly.</p>
+          </div>
+          <div class="fragment slide-left glass rounded-3xl p-7 border-l-4 border-teal-400/80">
+            <h3 class="text-xl font-semibold text-teal-200 mb-2">🔗 CA + Static Fusion</h3>
+            <p class="text-white/75">MPC decisions link directly to inflation, growth, banking – perfect analytical fodder.</p>
+          </div>
+          <div class="fragment slide-left glass rounded-3xl p-7 border-l-4 border-violet-400/80">
+            <h3 class="text-xl font-semibold text-violet-200 mb-2">📝 Mains Hotspot</h3>
+            <p class="text-white/75">Inflation targeting, transmission failure, liquidity management – 15 markers repeatedly.</p>
+          </div>
+          <div class="fragment slide-left glass rounded-3xl p-7 border-l-4 border-white/20">
+            <h3 class="text-xl font-semibold mb-2">🎤 Interview Edge</h3>
+            <p class="text-white/75">Governor, repo rate, stance, latest CPI – shows you follow the economy live.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 3: Core Idea -->
+  <div class="slide" data-index="2">
+    <div class="relative z-10 h-full flex items-center justify-center px-6">
+      <div class="max-w-5xl w-full text-center">
+        <h2 class="fragment fade-up text-4xl md:text-5xl font-bold mb-16">The Core Idea</h2>
+        <div class="fragment zoom-in glass rounded-[2.5rem] p-12 md:p-16 relative overflow-hidden">
+          <div class="absolute inset-0 bg-gradient-to-r from-amber-500/10 via-transparent to-teal-500/10"></div>
+          <div class="relative text-4xl md:text-6xl font-extrabold">Growth <span class="text-white/40">with</span> <span class="teal">Price Stability</span></div>
+          <div class="relative mt-10 flex-wrap justify-center gap-3 text-sm md:text-base text-white/70">
+            <span class="glass px4 py2 rounded-full">RBI</span>
+            <span class="text-amber-300">→</span>
+            <span class="glass px4 py2 rounded-full">Money Supply</span>
+            <span class="text-amber-300">→</span>
+            <span class="glass px4 py2 rounded-full">Interest Rates</span>
+            <span class="text-amber-300">→</span>
+            <span class="glass px4 py2 rounded-full">Demand</span>
+            <span class="text-amber-300">→</span>
+            <span class="glass px4 py2 rounded-full">Inflation</span>
+          </div>
+        </div>
+        <div class="grid md:grid-cols-2 gap-6 mt-10 max-w-3xl mx-auto">
+          <div class="fragment fade-up glass rounded-2xl p-6 border border-red-400/30">
+            <div class="text-red-300 font-semibold">Too Much Money</div>
+            <div class="text-white/70 text-sm mt1">Demand > Supply = Inflation ↑</div>
+          </div>
+          <div class="fragment fade-up glass rounded-2xl p-6 border border-blue-400/30">
+            <div class="text-blue-300 font-semibold">Too Little Money</div>
+            <div class="text-white/70 text-sm mt1">Credit freeze = Growth ↓</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 4: Pillar 1 -->
+  <div class="slide" data-index="3">
+    <div class="relative z-10 h-full flex items-center">
+      <div class="max-w-6xl mx-auto px-6 w-full">
+        <div class="fragment fade-up flex items-center gap-3 mb-10">
+          <span class="text-[11px] tracking-widest glass px-3 py-1 rounded-full">PILLAR 1</span>
+          <h2 class="text-3xl md:text-5xl font-bold">Money Supply: <span class="gold">M0 / M1 / M3</span></h2>
+        </div>
+        <div class="grid md:grid-cols-3 gap-6 items-end">
+          <div class="fragment zoom-in">
+            <div class="glass rounded-3xl p-8 h-[220px] border-t-4 border-amber-400">
+              <div class="text-amber-300 text-xs font-bold tracking-widest mb-2">RESERVE MONEY</div>
+              <div class="text-5xl font-extrabold mb-3">M0</div>
+              <p class="text-white/70 text-sm leading-snug">Currency in Circulation + Bankers' Deposits with RBI + Other Deposits with RBI</p>
+            </div>
+          <div class="fragment zoom-in">
+            <div class="glass rounded-3xl p-8 h-[280px] border-t-4 border-teal-400">
+              <div class="text-teal-300 text-xs font-bold tracking-widest mb-2">NARROW MONEY</div>
+              <div class="text-5xl font-extrabold mb-3">M1</div>
+              <p class="text-white/75 text-sm leading-snug">Currency with Public + Demand Deposits + Other Deposits with RBI</p>
+              <p class="mt-4 text-xs text-teal-200/80">Most liquid for transactions</p>
+            </div>
+          </div>
+          <div class="fragment zoom-in">
+            <div class="glass rounded-3xl p-8 h-[340px] border-t-4 border-violet-400 relative">
+              <div class="absolute -top-10 -right-10 w-40 h-40 bg-violet-500/20 rounded-full blur-3xl"></div>
+              <div class="text-violet-300 text-xs font-bold tracking-widest mb-2">BROAD MONEY</div>
+              <div class="text-6xl font-extrabold mb-3">M3</div>
+              <p class="text-white/80 text-sm leading-snug">M1 + Time Deposits with Banks</p>
+              <div class="mt-8 inline-flex items-center gap-2 text-xs px-3 py-2 rounded-full bg-violet-500/20 text-violet-200 border border-violet-400/30">★ RBI's key aggregate</div>
+            </div>
+          </div>
+        </div>
+        <div class="fragment fade-up mt-8 text-center text-white/60 text-sm">Remember: Liquidity M0>M1 , Size M3>M1>M0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 5: Pillar 2 -->
+  <div class="slide" data-index="4">
+    <div class="relative z-10 h-full flex items-center">
+      <div class="max-w-6xl mx-auto px-6 w-full">
+        <div class="fragment fade-up flex items-center gap-3 mb-8">
+          <span class="text-[11px] tracking-widest glass px-3 py-1 rounded-full">PILLAR 2</span>
+          <h2 class="text-3xl md:text-5xl font-bold">RBI Toolkit & LAF Corridor</h2>
+        </div>
+        <div class="grid lg:grid-cols-5 gap-6">
+          <div class="lg:col-span-3 grid grid-cols-2 gap-4">
+            <div class="fragment slide-left glass rounded-2xl p-5">
+              <div class="text-amber-300 font-bold">Repo 5.25%</div>
+              <div class="text-xs text-white/70 mt-1">Policy rate – banks borrow from RBI</div>
+            </div>
+            <div class="fragment slide-left glass rounded-2xl p-5">
+              <div class="text-teal-300 font-bold">SDF 5.00%</div>
+              <div class="text-xs text-white/70 mt-1">Floor – absorb liquidity, no collateral</div>
+            </div>
+            <div class="fragment slide-left glass rounded-2xl p-5">
+              <div class="text-violet-300 font-bold">MSF 5.50%</div>
+              <div class="text-xs text-white/70 mt-1">Ceiling – emergency borrowing</div>
+            </div>
+            <div class="fragment slide-left glass rounded-2xl p-5">
+              <div class="text-white font-bold">CRR 4.5%</div>
+              <div class="text-xs text-white/70 mt-1">Cash impounded – direct control</div>
+            </div>
+            <div class="fragment slide-left glass rounded-2xl p-5 col-span-2">
+              <div class="flex justify-between">
+                <div><span class="font-bold">SLR 18%</span><span class="text-xs text-white/60 ml-2">G-sec holding</span></div>
+                <div><span class="font-bold">OMO</span><span class="text-xs text-white/60 ml-2">Buy/Sell bonds</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="lg:col-span-2 fragment zoom-in">
+            <div class="glass rounded-3xl p-8 h-full">
+              <h3 class="font-semibold text-lg mb-6 text-center">LAF Corridor</h3>
+              <div class="relative h-[260px] flex flex-col justify-between">
+                <div class="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-1 bg-gradient-to-b from-violet-400 via-amber-400 to-teal-400 rounded-full"></div>
+                <div class="relative flex items-center gap-4">
+                  <div class="w-24 text-right text-violet-300 font-bold">5.50%</div>
+                  <div class="w-3 h-3 rounded-full bg-violet-400"></div>
+                  <div class="glass px-3 py-1 rounded-lg text-sm">MSF – Ceiling</div>
+                </div>
+                <div class="relative flex items-center gap-4">
+                  <div class="w-24 text-right text-amber-300 font-bold">5.25%</div>
+                  <div class="w-4 h-4 rounded-full bg-amber-400 animate-pulse"></div>
+                  <div class="glass px-3 py-1 rounded-lg text-sm font-semibold">Repo – Policy</div>
+                </div>
+                <div class="relative flex items-center gap-4">
+                  <div class="w-24 text-right text-teal-300 font-bold">5.00%</div>
+                  <div class="w-3 h-3 rounded-full bg-teal-400"></div>
+                  <div class="glass px-3 py-1 rounded-lg text-sm">SDF – Floor</div>
+                </div>
+              </div>
+              <p class="text-center text-xs text-white/60 mt-6">Corridor keeps overnight rates anchored</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 6: Pillar 3 -->
+  <div class="slide" data-index="5">
+    <div class="relative z-10 h-full flex items-center">
+      <div class="max-w-5xl mx-auto px-6 w-full">
+        <div class="fragment fade-up flex items-center gap-3 mb-8">
+          <span class="text-[11px] tracking-widest glass px-3 py-1 rounded-full">PILLAR 3</span>
+          <h2 class="text-3xl md:text-5xl font-bold">CPI vs WPI</h2>
+        </div>
+        <div class="fragment zoom-in glass rounded-3xl overflow-hidden">
+          <div class="grid grid-cols-4 bg-white/5 border-b border-white/10">
+            <div class="p-4 font-semibold text-white/60 text-sm">Parameter</div>
+            <div class="p-4 font-bold text-amber-300">CPI (Retail)</div>
+            <div class="p-4 font-bold text-teal-300">WPI (Wholesale)</div>
+            <div class="p-4 font-semibold text-white/60 text-sm hidden md:block">UPSC Note</div>
+          </div>
+          <div class="divide-y divide-white/5 text-sm">
+            <div class="grid grid-cols-4 p-4 hover:bg-white/5"><div class="text-white/60">Compiled by</div><div>NSO, MoSPI</div><div>DPIIT</div><div class="hidden md:block text-white/50">Different ministries</div></div>
+            <div class="grid grid-cols-4 p-4 hover:bg-white/5"><div class="text-white/60">Base Year</div><div>2012</div><div>2011-12</div><div class="hidden md:block text-white/50">Revision due</div></div>
+            <div class="grid grid-cols-4 p-4 hover:bg-white/5"><div class="text-white/60">Food Weight</div><div class="text-amber-200">~45.86%</div><div class="text-teal-200">~24.4%</div><div class="hidden md:block text-white/50">CPI food-sensitive</div></div>
+            <div class="grid grid-cols-4 p-4 hover:bg-white/5"><div class="text-white/60">RBI Target?</div><div class="font-bold text-amber-300">Yes – 4% ±2%</div><div>No</div><div class="hidden md:block text-white/50">Since 2016</div></div>
+            <div class="grid grid-cols-4 p-4 hover:bg-white/5"><div class="text-white/60">Covers Services</div><div>Yes</div><div>No</div><div class="hidden md:block text-white/50">WPI only goods</div></div>
+          </div>
+        </div>
+        <div class="fragment fade-up mt-6 text-center"><span class="glass px-4 py-2 rounded-full text-sm">Prelims Trick: CPI-C is policy anchor, not WPI</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 7: Pillar 4 -->
+  <div class="slide" data-index="6">
+    <div class="relative z-10 h-full flex items-center">
+      <div class="max-w-6xl mx-auto px-6 w-full">
+        <div class="fragment fade-up flex items-center gap-3 mb-10">
+          <span class="text-[11px] tracking-widest glass px-3 py-1 rounded-full">PILLAR 4</span>
+          <h2 class="text-3xl md:text-5xl font-bold">Transmission – The Pipe</h2>
+        </div>
+        <div class="relative">
+          <svg class="absolute top-1/2 -translate-y-1/2 left-0 w-full h-24 hidden md:block" viewBox="0 0 1000 100">
+            <path d="M 20 50 H 980" stroke="rgba(255,255,255,0.15)" stroke-width="24" stroke-linecap="round"/>
+            <path d="M 20 50 H 980" stroke="url(#grad)" stroke-width="4" class="pipe-flow" fill="none"/>
+            <defs><linearGradient id="grad"><stop offset="0%" stop-color="#facc15"/><stop offset="50%" stop-color="#2dd4bf"/><stop offset="100%" stop-color="#a78bfa"/></linearGradient></defs>
+          </svg>
+          <div class="grid grid-cols-1 md:grid-cols-5 gap-5 relative">
+            <div class="fragment fade-up glass rounded-2xl p-5 text-center"><div class="text-2xl mb-2">🏦</div><div class="font-bold text-amber-300">RBI Repo</div><div class="text-xs text-white/60 mt-1">5.25%</div></div>
+            <div class="fragment fade-up glass rounded-2xl p-5 text-center"><div class="text-2xl mb-2">💰</div><div class="font-bold">Banks' Cost</div><div class="text-xs text-white/60 mt-1">MCLR / EBLR</div></div>
+            <div class="fragment fade-up glass rounded-2xl p-5 text-center trap-pulse border-amber-400/50"><div class="text-2xl mb-2">📉</div><div class="font-bold">Loan Rates</div><div class="text-xs text-amber-200 mt-1">Sticky!</div></div>
+            <div class="fragment fade-up glass rounded-2xl p-5 text-center"><div class="text-2xl mb-2">🛒</div><div class="font-bold">Credit Demand</div><div class="text-xs text-white/60 mt-1">Homes, firms</div></div>
+            <div class="fragment fade-up glass rounded-2xl p-5 text-center"><div class="text-2xl mb-2">📊</div><div class="font-bold text-teal-300">Inflation↓</div><div class="text-xs text-white/60 mt-1">Growth↑</div></div>
+          </div>
+        </div>
+        <div class="fragment fade-up mt-12 grid md:grid-cols-3 gap-4 max-w-4xl mx-auto">
+          <div class="glass rounded-xl p-4 border border-red-400/30"><div class="text-red-300 text-sm font-semibold">Blockage 1: Liquidity Trap</div><div class="text-xs text-white/70">Rates low but no borrowing</div></div>
+          <div class="glass rounded-xl p-4 border border-amber-400/30"><div class="text-amber-300 text-sm font-semibold">Blockage 2: NPA Stress</div><div class="text-xs text-white/70">Banks won't transmit</div></div>
+          <div class="glass rounded-xl p-4 border-violet-400/30"><div class="text-violet-300 text-sm font-semibold">Blockage 3: External Shocks</div><div class="text-xs text-white/70">Oil, Fed, flows</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 8: Mains Theme 1 -->
+  <div class="slide" data-index="7">
+    <div class="relative z-10 h-full flex items-center">
+      <div class="max-w-6xl mx-auto px-6 w-full">
+        <div class="fragment fade-up mb-8">
+          <span class="text-[11px] tracking-widest glass px-3 py-1 rounded-full">MAINS THEME 1</span>
+          <h2 class="text-3xl md:text-5xl font-bold mt-3">Inflation Targeting: <span class="gold">4% ±2%</span></h2>
+          <p class="text-white/60 mt-2">Flexible Inflation Targeting since 2016 – MPC mandate</p>
+        </div>
+        <div class="grid md:grid-cols-2 gap-6 items-stretch">
+          <div class="fragment fade-up h-full">
+            <div class="glass rounded-3xl p-8 h-full border-l-4 border-emerald-400/70 flex flex-col">
+              <h3 class="text-2xl font-bold text-emerald-300 mb-6 flex items-center gap-2">✓ PROS</h3>
+              <ul class="space-y-4 text-[15px] leading-relaxed flex-1">
+                <li class="flex gap-3"><span class="text-emerald-400">•</span><span><strong>Anchors expectations</strong> – households & firms plan better</span></li>
+                <li class="flex gap-3"><span class="text-emerald-400">•</span><span><strong>Transparency</strong> – MPC minutes, voting public</span></li>
+                <li class="flex gap-3"><span class="text-emerald-400">•</span><span><strong>Accountability</strong> – RBI writes to Govt if >6% or <2% for 3 quarters</span></li>
+                <li class="flex gap-3"><span class="text-emerald-400">•</span><span><strong>Policy credibility</strong> – reduced volatility post-2016</span></li>
+              </ul>
+            </div>
+          </div>
+          <div class="fragment fade-up h-full">
+            <div class="glass rounded-3xl p-8 h-full border-l-4 border-red-400/70 flex flex-col">
+              <h3 class="text-2xl font-bold text-red-300 mb-6 flex items-center gap-2">✗ CONS</h3>
+              <ul class="space-y-4 text-[15px] leading-relaxed flex-1">
+                <li class="flex gap-3"><span class="text-red-400">•</span><span><strong>Supply shocks dominate</strong> – food, fuel outside repo control</span></li>
+                <li class="flex gap-3"><span class="text-red-400">•</span><span><strong>Growth trade-off</strong> – high rates hurt MSME, investment</span></li>
+                <li class="flex gap-3"><span class="text-red-400">•</span><span><strong>Food weight 46%</strong> – volatile, not rate-sensitive</span></li>
+                <li class="flex gap-3"><span class="text-red-400">•</span><span><strong>Core vs Headline</strong> – targeting headline may be blunt</span></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="fragment fade-up mt-6 text-center text-sm text-white/70">Mains angle: Is 4% right for India? Should we target core? Flexible enough?</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 9: Mains Themes 2-3 -->
+  <div class="slide" data-index="8">
+    <div class="relative z-10 h-full flex items-center">
+      <div class="max-w-6xl mx-auto px-6 w-full">
+        <h2 class="fragment fade-up text-3xl md:text-5xl font-bold mb-10">Mains Themes 2 & 3</h2>
+        <div class="grid md:grid-cols-2 gap-6">
+          <div class="fragment slide-left glass rounded-3xl p-8">
+            <div class="flex items-center gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-teal-500/20 flex items-center justify-center text-teal-300 font-bold">2</div><h3 class="text-2xl font-bold">Liquidity Management</h3></div>
+            <ul class="space-y-3 text-white/80">
+              <li>• <strong>Tools:</strong> LAF, VRR/VRRR, OMO, FX swaps, CRR</li>
+              <li>• <strong>Regime shifts:</strong> Deficit (2018) → Surplus (2019-22) → Neutral (2024-26)</li>
+              <li>• <strong>Challenge:</strong> Govt cash balances, FX flows distort</li>
+              <li>• <strong>UPSC link:</strong> Why rates stay high despite surplus?</li>
+            </ul>
+          </div>
+          <div class="fragment slide-left glass rounded-3xl p-8">
+            <div class="flex items-center gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-violet-500/20 flex items-center justify-center text-violet-300 font-bold">3</div><h3 class="text-2xl font-bold">Digital Money & Stability</h3></div>
+            <ul class="space-y-3 text-white/80">
+              <li>• <strong>e₹ CBDC:</strong> Pilot retail & wholesale – reduce cash, better transmission</li>
+              <li>• <strong>Crypto vs Sovereign:</strong> Financial stability risk, RBI stance</li>
+              <li>• <strong>Financial Stability:</strong> Twin balance sheet, NBFC contagion, inflation-growth dilemma</li>
+              <li>• <strong>UPSC link:</strong> Digital rupee = monetary sovereignty in digital age</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 10: Interview Dashboard -->
+  <div class="slide" data-index="9">
+    <div class="relative z-10 h-full flex items-center">
+      <div class="max-w-6xl mx-auto px-6 w-full">
+        <div class="fragment fade-up flex items-center justify-between mb-8 flex-wrap gap-4">
+          <div>
+            <span class="text-[11px] tracking-widest glass px-3 py-1 rounded-full">INTERVIEW DASHBOARD</span>
+            <h2 class="text-3xl md:text-5xl font-bold mt-3">April 2026 Snapshot</h2>
+          </div>
+          <div class="glass px-4 py-2 rounded-full text-sm">Governor: <span class="gold font-semibold">Sanjay Malhotra</span></div>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div class="fragment zoom-in glass rounded-2xl p-5 text-center"><div class="text-xs text-white/60">Repo Rate</div><div class="text-3xl font-extrabold gold mt1">5.25%</div></div>
+          <div class="fragment zoom-in glass rounded-2xl p-5 text-center"><div class="text-xs text-white/60">Stance</div><div class="text-2xl font-bold teal mt1">Neutral</div></div>
+          <div class="fragment zoom-in glass rounded-2xl p-5 text-center"><div class="text-xs text-white/60">CPI (Feb)</div><div class="text-3xl font-extrabold violet mt1">6.9%</div></div>
+          <div class="fragment zoom-in glass rounded-2xl p-5 text-center"><div class="text-xs text-white/60">GDP FY26E</div><div class="text-3xl font-extrabold mt1">6.7%</div></div>
+          <div class="fragment zoom-in glass rounded-2xl p-5 text-center"><div class="text-xs text-white/60">M3 Growth</div><div class="text-2xl font-bold mt1">10.2%</div></div>
+          <div class="fragment zoom-in glass rounded-2xl p-5 text-center"><div class="text-xs text-white/60">USD/INR</div><div class="text-2xl font-bold mt1">84.1</div></div>
+        </div>
+        <div class="fragment fade-up mt-8 glass rounded-3xl p-6">
+          <div class="text-sm text-white/70 leading-relaxed">Talking points: Inflation above tolerance (6%) driven by food; RBI holds at 5.25% with neutral stance – watching monsoon, crude, Fed cuts. Transmission improving via external benchmark loans. e₹ retail crosses 5mn users. Financial stability comfortable – GNPA ~2.5%.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 11: Revision -->
+  <div class="slide" data-index="10">
+    <div class="relative z-10 h-full flex items-center justify-center px-6">
+      <div class="max-w-5xl w-full text-center">
+        <h2 class="fragment fade-up text-4xl md:text-6xl font-bold mb-12">Revision in 30s</h2>
+        <div class="grid md:grid-cols-4 gap-4 mb-10">
+          <div class="fragment zoom-in glass rounded-2xl p-6"><div class="text-amber-300 font-bold mb2">P1 Money</div><div class="text-2xl font-extrabold">M3 = M1 + TD</div></div>
+          <div class="fragment zoom-in glass rounded-2xl p-6"><div class="text-teal-300 font-bold mb2">P2 Rates</div><div class="text-2xl font-extrabold">Repo 5.25%</div></div>
+          <div class="fragment zoom-in glass rounded-2xl p-6"><div class="text-violet-300 font-bold mb2">P3 Inflation</div><div class="text-2xl font-extrabold">CPI 4±2</div></div>
+          <div class="fragment zoom-in glass rounded-2xl p-6"><div class="text-white font-bold mb2">P4 Pipe</div><div class="text-2xl font-extrabold">Repo→Loan→CPI</div></div>
+        </div>
+        <div class="fragment fade-up glass rounded-3xl p-8 inline-block">
+          <div class="text-left space-y-2 text-white/85">
+            <div>✅ <strong>Governor:</strong> Sanjay Malhotra | <strong>Stance:</strong> Neutral</div>
+            <div>✅ <strong>LAF:</strong> MSF 5.50% > Repo 5.25% > SDF 5.00%</div>
+            <div>✅ <strong>CPI base 2012, WPI base 2011-12</strong></div>
+            <div>✅ <strong>Mains mantra:</strong> Credibility vs Flexibility, Supply shocks matter</div>
+          </div>
+        <div class="fragment zoom-in mt12">
+          <div class="inline-flex items-center gap-3 glass px-6 py-3 rounded-full">
+            <span class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
+            <span class="text-sm tracking-wide">Deck Complete – Auto-play finished</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="absolute top-5 right-5 z-50 flex items-center gap-2">
+    <div class="glass rounded-full px-3 py-1.5 text-[11px] tracking-widest"><span id="counter">1 / 11</span></div>
+    <button id="prev" class="glass w-9 h-9 rounded-full grid place-items-center hover:bg-white/10 transition" aria-label="Previous">‹</button>
+    <button id="next" class="glass w-9 h-9 rounded-full grid place-items-center hover:bg-white/10 transition" aria-label="Next">›</button>
+  </div>
+
+  <!-- Progress -->
+  <div class="absolute bottom-0 left-0 right-0 h-[4px] bg-white/10 z-50">
+    <div id="progress" class="h-full w-0 bg-gradient-to-r from-amber-400 via-teal-400 to-violet-500 transition-all duration-500 ease-linear"></div>
+  </div>
+</div>
+
+<script>
+const slides = Array.from(document.querySelectorAll('.slide'));
+const counter = document.getElementById('counter');
+const progress = document.getElementById('progress');
+const prevBtn = document.getElementById('prev');
+const nextBtn = document.getElementById('next');
+
+let currentSlide = 0;
+let fragIndex = 0;
+let timer = null;
+const FRAG_DELAY = 800;
+const SLIDE_HOLD = 2000;
+let playing = true;
+
+function getFragments(slide) { return Array.from(slide.querySelectorAll('.fragment')); }
+
+function showSlide(idx) {
+  if (idx < 0 || idx >= slides.length) return;
+  clearTimeout(timer);
+  slides.forEach(s => s.classList.remove('active'));
+  currentSlide = idx;
+  const slide = slides[currentSlide];
+  slide.classList.add('active');
+  getFragments(slide).forEach(f => f.classList.remove('visible'));
+  fragIndex = 0;
+  counter.textContent = `${currentSlide + 1} / ${slides.length}`;
+  updateProgress(true);
+  if (playing) timer = setTimeout(playFragment, 300);
+}
+
+function playFragment() {
+  const frags = getFragments(slides[currentSlide]);
+  if (fragIndex < frags.length) {
+    frags[fragIndex].classList.add('visible');
+    fragIndex++;
+    updateProgress();
+    timer = setTimeout(playFragment, FRAG_DELAY);
+  } else {
+    updateProgress();
+    if (currentSlide < slides.length - 1 && playing) {
+      timer = setTimeout(() => showSlide(currentSlide + 1), SLIDE_HOLD);
+    } else {
+      playing = false;
+    }
+  }
+}
+
+function next() { showSlide(Math.min(currentSlide + 1, slides.length - 1)); }
+function prev() { showSlide(Math.max(currentSlide - 1, 0)); }
+
+function updateProgress(immediate = false) {
+  const totalFrags = slides.reduce((sum, s) => sum + getFragments(s).length, 0);
+  const doneBefore = slides.slice(0, currentSlide).reduce((sum, s) => sum + getFragments(s).length, 0);
+  const done = doneBefore + fragIndex;
+  const pct = Math.max(2, (done / totalFrags) * 100);
+  if (immediate) progress.style.transition = 'none';
+  progress.style.width = pct + '%';
+  if (immediate) { void progress.offsetWidth; progress.style.transition = 'width 0.5s linear'; }
+}
+
+// Controls
+nextBtn.addEventListener('click', next);
+prevBtn.addEventListener('click', prev);
+document.addEventListener('keydown', e => {
+  if (['ArrowRight',' '].includes(e.key)) { e.preventDefault(); next(); }
+  if (e.key === 'ArrowLeft') { e.preventDefault(); prev(); }
+});
+document.getElementById('deck').addEventListener('click', e => {
+  if (e.target.closest('button')) return;
+  next();
+});
+
+// Start
+showSlide(0);
+</script>
+</body>
+</html>
