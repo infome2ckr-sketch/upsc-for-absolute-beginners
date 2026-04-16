@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Economy Chapters | UPSC</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'Inter', sans-serif; background: #020617; color: #e2e8f0; }
+  h1 { font-family: 'Poppins', sans-serif; }
+.glass { backdrop-filter: blur(16px); background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); }
+.card { transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+.card:hover { transform: translateY(-8px) scale(1.02); background: rgba(255,255,255,0.07); border-color: rgba(251,191,36,0.3); }
+.card-live { border-left: 4px solid #fbbf24; cursor: pointer; }
+.card-soon { border-left: 4px solid rgba(255,255,255,0.15); opacity: 0.65; cursor: not-allowed; }
+.card-soon:hover { transform: none; background: rgba(255,255,255,0.04); }
+.shimmer { background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+  @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+</style>
+</head>
+<body>
+<div class="max-w-6xl mx-auto px-6 py-12">
+
+  <div class="text-center mb-14">
+    <div class="inline-flex items-center gap-2 glass rounded-full px-4 py-1.5 text-xs mb-6">
+      <span class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
+      8 CHAPTERS • PYQ BACKED
+    </div>
+    <h1 class="text-[clamp(40px,6vw,68px)] font-extrabold leading-tight mb-4">
+      Choose your <span class="bg-gradient-to-r from-amber-300 to-teal-300 bg-clip-text text-transparent">chapter</span>
+    </h1>
+    <p class="text-white/60 max-w-xl mx-auto">Each chapter is broken down the way UPSC asks it. Start anywhere, but we recommend starting at the top.</p>
+  </div>
+
+  <div id="chapters" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div class="glass rounded-3xl p-6 h-48 shimmer"></div>
+    <div class="glass rounded-3xl p-6 h-48 shimmer"></div>
+    <div class="glass rounded-3xl p-6 h-48 shimmer"></div>
+    <div class="glass rounded-3xl p-6 h-48 shimmer"></div>
+    <div class="glass rounded-3xl p-6 h-48 shimmer"></div>
+    <div class="glass rounded-3xl p-6 h-48 shimmer"></div>
+  </div>
+
+  <div class="text-center mt-16">
+    <p class="text-white/40 text-sm">New chapters added weekly. Bookmark this page.</p>
+  </div>
+
+</div>
+
+<script>
+const SHEET_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTYM0HgCJKXP7uy7DEMXRlPoDiI-KEt_RsB8rlZTexu7PkaGafspAsj2YEAJeW2iXNHFifqfasXn4vM/pub?gid=2039083578&single=true&output=csv';
+const BASE_URL = 'https://upscexampreparation.clineacademy.com';
+
+async function loadChapters() {
+  try {
+    const res = await fetch(SHEET_CSV);
+    const csv = await res.text();
+    const rows = csv.split('\n').slice(1).filter(r => r.trim());
+
+    const chapters = rows.map((row, idx) => {
+      const cols = row.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g)?.map(c => c.replace(/^"|"$/g, '').trim()) || [];
+      let link = cols[1] || '';
+      if (link.startsWith('/')) link = BASE_URL + link;
+      else if (link &&!link.startsWith('http')) link = BASE_URL + '/' + link;
+
+      return {
+        num: idx + 1,
+        title: cols[0] || `Chapter ${idx+1}`,
+        link: link,
+        desc: cols[2] || 'Core concepts simplified for UPSC',
+        icon: cols[3] || '📘',
+        status: (cols[4] || 'live').toLowerCase()
+      };
+    });
+
+    const container = document.getElementById('chapters');
+    container.innerHTML = chapters.map(ch => {
+      const isLive = ch.status.includes('live') && ch.link;
+
+      if (isLive) {
+        return `
+          <a href="${ch.link}" class="glass card card-live rounded-3xl p-6 block">
+            <div class="flex items-start justify-between mb-4">
+              <div class="text-4xl">${ch.icon}</div>
+              <span class="text-[10px] px-2.5 py-1 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30 font-medium tracking-wider">LIVE</span>
+            </div>
+            <div class="text-xs text-white/40 mb-1">CHAPTER ${String(ch.num).padStart(2,'0')}</div>
+            <h3 class="text-xl font-bold mb-2 leading-snug">${ch.title}</h3>
+            <p class="text-sm text-white/60 leading-relaxed">${ch.desc}</p>
+            <div class="mt-4 flex items-center gap-2 text-amber-300 text-sm font-medium">Open chapter →</div>
+          </a>
+        `;
+      } else {
+        // SOON - disabled, red small text
+        return `
+          <div class="glass card card-soon rounded-3xl p-6">
+            <div class="flex items-start justify-between mb-4">
+              <div class="text-4xl grayscale opacity-70">${ch.icon}</div>
+              <span class="text-[10px] px-2.5 py-1 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 font-medium tracking-wider">SOON</span>
+            </div>
+            <div class="text-xs text-white/40 mb-1">CHAPTER ${String(ch.num).padStart(2,'0')}</div>
+            <h3 class="text-xl font-bold mb-2 leading-snug text-white/70">${ch.title}</h3>
+            <p class="text-sm text-white/50 leading-relaxed">${ch.desc}</p>
+            <div class="mt-4 text-[11px] text-red-400 font-medium">coming soon</div>
+          </div>
+        `;
+      }
+    }).join('');
+
+  } catch(e) {
+    document.getElementById('chapters').innerHTML = '<div class="col-span-full text-center text-red-400">Failed to load chapters.</div>';
+  }
+}
+
+loadChapters();
+</script>
+</body>
+</html>
