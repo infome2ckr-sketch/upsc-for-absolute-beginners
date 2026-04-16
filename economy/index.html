@@ -1,63 +1,61 @@
-<!DOCTYPE html>
+
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Monetary Economics</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Economy Simplified for UPSC</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Poppins:wght@700&display=swap" rel="stylesheet">
-<style>body{font-family:Inter;background:#020617;color:#e2e8f0}h1{font-family:Poppins}.glass{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(12px)}</style>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'Inter', sans-serif; background: #020617; color: #e2e8f0; }
+  h1 { font-family: 'Poppins', sans-serif; }
+  .glass { backdrop-filter: blur(14px); background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); }
+  .float { animation: float 4s ease-in-out infinite; }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+</style>
 </head>
-<body class="p-6">
-<div class="max-w-4xl mx-auto">
-  <a href="../" class="text-sm text-white/60">← Back</a>
-  <h1 class="text-3xl font-bold mt-4 mb-6">Chapters in Monetary Economics</h1>
-  
-  <div id="list" class="grid md:grid-cols-2 gap-3">
-    <div class="glass p-4 rounded-xl text-white/50">Loading...</div>
+<body>
+<div class="min-h-screen flex items-center justify-center px-6 py-12">
+  <div class="max-w-3xl w-full text-center relative">
+    
+    <div class="absolute -top-20 left-1/2 -translate-x-1/2 w-96 h-96 bg-amber-400/10 rounded-full blur-3xl"></div>
+    
+    <div class="relative z-10">
+      <div class="text-6xl mb-6 float">🌱</div>
+      
+      <h1 class="text-[clamp(36px,6vw,60px)] font-extrabold leading-tight mb-6">
+        Economy feels big?<br>
+        <span class="bg-gradient-to-r from-amber-300 to-teal-300 bg-clip-text text-transparent">Let's make it simple.</span>
+      </h1>
+      
+      <p class="text-lg text-white/70 leading-relaxed max-w-2xl mx-auto">
+        We know — many students find Economy intimidating. Too many terms, too much fear.
+      </p>
+      <p class="text-lg text-white/70 leading-relaxed max-w-2xl mx-auto mt-3 mb-10">
+        This is a small effort to break every concept into bite-sized, UPSC-relevant pieces. No jargon. No overwhelm. Just clarity, one step at a time.
+      </p>
+
+      <div class="glass rounded-2xl p-6 mb-10 text-left max-w-xl mx-auto">
+        <p class="text-white/80 mb-3">✨ <strong>Built for beginners.</strong> We start from zero.</p>
+        <p class="text-white/80 mb-3">🎯 <strong>PYQ-first.</strong> Only what UPSC actually asks.</p>
+        <p class="text-white/80">🤝 <strong>Take it slow.</strong> One concept at a time.</p>
+      </div>
+
+      <a href="http://upscexampreparation.clineacademy.com/economy/chapters/" class="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-amber-400 to-amber-500 text-black font-bold rounded-2xl hover:scale-105 transition text-lg shadow-lg shadow-amber-900/20">
+        Explore Economy Chapters
+        <span>→</span>
+      </a>
+      
+      <p class="text-sm text-white/50 mt-4">Start your journey here</p>
+
+      <div class="mt-16 pt-8 border-t border-white/10">
+        <p class="text-white/50 italic">
+          "Once you see the pattern, everything clicks."
+        </p>
+        <p class="text-xs text-white/30 mt-3">You've got this. Let's begin.</p>
+      </div>
+    </div>
   </div>
 </div>
-
-<script>
-// THIS WORKS - uses jsDelivr CDN, not GitHub API
-async function load() {
-  const box = document.getElementById('list');
-  try {
-    // Get the file list from GitHub via a reliable proxy
-    const url = 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://api.github.com/repos/infome2ckr-sketch/upsc-for-absolute-beginners/contents/economy/monetary-economy');
-    
-    const res = await fetch(url);
-    const data = await res.json();
-    const files = JSON.parse(data.contents);
-    
-    const htmlFiles = files.filter(f => f.name.endsWith('.html') && f.name !== 'index.html');
-    
-    if(htmlFiles.length === 0) {
-      box.innerHTML = '<div class="glass p-4 rounded-xl">Add files like ch01_intro.html to this folder</div>';
-      return;
-    }
-    
-    box.innerHTML = '';
-    htmlFiles.sort((a,b) => a.name.localeCompare(b.name)).forEach(f => {
-      const name = f.name.replace('.html','').replace(/[_-]/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
-      box.innerHTML += `
-        <a href="${f.name}" class="glass p-4 rounded-xl hover:bg-white/10 block">
-          <span class="text-amber-300">→</span> ${name}
-        </a>`;
-    });
-  } catch(e) {
-    console.log(e);
-    // FALLBACK - manual list so page never breaks
-    box.innerHTML = `
-      <a href="ch01_intro.html" class="glass p-4 rounded-xl hover:bg-white/10 block">
-        <span class="text-amber-300">→</span> Ch01 Intro
-      </a>
-      <div class="glass p-4 rounded-xl text-xs text-white/40">
-        Auto-load failed. Add new chapters manually here as backup.
-      </div>`;
-  }
-}
-load();
-</script>
 </body>
 </html>
