@@ -1,55 +1,47 @@
-<div id="subpages" class="grid md:grid-cols-2 gap-3 mt-6">
-  <p class="text-white/50">Loading chapters...</p>
-</div>
+---
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Monetary Economics</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Poppins:wght@700&display=swap" rel="stylesheet">
+<style>body{font-family:Inter;background:#020617;color:#e2e8f0}h1{font-family:Poppins}.glass{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(12px)}</style>
+</head>
+<body class="p-6 md:p-10">
+<div class="max-w-4xl mx-auto">
+  <a href="../" class="text-sm text-white/60 hover:text-white">← Back to Economy</a>
+  <h1 class="text-4xl font-bold mt-6 mb-2">Chapters in Monetary Economics</h1>
+  <p class="text-white/60 mb-8">New pages you add to this folder appear here automatically.</p>
 
-<script>
-async function loadChapters() {
-  const user = 'infome2ckr-sketch';
-  const repo = 'upsc-for-absolute-beginners';
-  const path = 'economy/monetary-economy'; // <-- YOUR ACTUAL FOLDER
-  
-  const box = document.getElementById('subpages');
-  
-  try {
-    const res = await fetch(`https://api.github.com/repos/${user}/${repo}/contents/${path}`);
-    if(!res.ok) throw new Error('GitHub API error');
-    
-    const files = await res.json();
-    
-    const chapters = files
-      .filter(f => f.type === 'file' && f.name.endsWith('.html') && f.name !== 'index.html')
-      .sort((a,b) => a.name.localeCompare(b.name));
-    
-    if(chapters.length === 0) {
-      box.innerHTML = '<p class="text-white/50">No chapters yet. Add .html files to this folder.</p>';
-      return;
-    }
-    
-    box.innerHTML = '';
-    chapters.forEach(f => {
-      const cleanName = f.name.replace('.html','')
-        .replace(/^ch\d+_?/i,'') // removes ch01_
-        .replace(/[-_]/g,' ')
-        .replace(/\b\w/g, c => c.toUpperCase());
-      
-      const a = document.createElement('a');
-      a.href = f.name;
-      a.className = 'block p-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition';
-      a.innerHTML = `
+  <div class="grid md:grid-cols-2 gap-4">
+  {% assign current_dir = page.dir %}
+  {% for file in site.static_files %}
+    {% if file.path contains current_dir and file.extname == '.html' and file.name != 'index.html' %}
+      <a href="{{ file.name }}" class="glass rounded-xl p-4 hover:bg-white/10 transition block">
         <div class="flex items-center gap-3">
           <span class="text-amber-300">→</span>
           <div>
-            <div class="font-medium">${cleanName || 'Chapter'}</div>
-            <div class="text-xs text-white/50">${f.name}</div>
+            <div class="font-medium">
+              {{ file.name | remove: '.html' | replace: '_', ' ' | replace: '-', ' ' | capitalize }}
+            </div>
+            <div class="text-xs text-white/50">{{ file.name }}</div>
           </div>
-        </div>`;
-      box.appendChild(a);
-    });
-    
-  } catch(err) {
-    console.error(err);
-    box.innerHTML = `<p class="text-red-400">Failed to load. Check: 1) folder name is correct, 2) files end with .html, 3) you're online.</p>`;
-  }
-}
-loadChapters();
-</script>
+        </div>
+      </a>
+    {% endif %}
+  {% endfor %}
+  </div>
+
+  {% assign count = 0 %}
+  {% for file in site.static_files %}{% if file.path contains current_dir and file.extname == '.html' and file.name != 'index.html' %}{% assign count = count | plus: 1 %}{% endif %}{% endfor %}
+  {% if count == 0 %}
+    <div class="glass rounded-xl p-6 text-center text-white/50 mt-4">
+      No chapters yet. Add a file like <code>ch01_intro.html</code> to this folder.
+    </div>
+  {% endif %}
+</div>
+</body>
+</html>
