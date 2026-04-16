@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+<!-- Playables SDK -->
+<script>// Playables SDK v1.0.0
+// Game lifecycle bridge: rAF-based game-ready detection + event communication
+(function() {
+  'use strict';
+
+  // Idempotency: skip if already initialized (e.g., server-side injection
+  // followed by client-side inject-javascript via the Bloks webview component).
+  if (window.playablesSDK) return;
+
+  var HANDLER_NAME = 'playablesGameEventHandler';
+  var ANDROID_BRIDGE_NAME = '_MetaPlayablesBridge';
+  var RAF_FRAME_THRESHOLD = 3;
+
+  var gameReadySent = false;
+  var firstInteractionSent = false;
+  var errorSent = false;
+  var frameCount = 0;
+  var originalRAF = window.requestAnimationFrame;
+
+  // --- Transport Layer ---
+
+  function hasIOSBridge() {
+    return !!(window.webkit &&
+              window.webkit.messageHandlers &&
+              window.webkit.messageHandlers[HANDLER_NAME]);
+  }
+
+  function hasAndroidBridge() {
+    return !!(window[ANDROID_BRIDGE_NAME] &&
+              typeof window[ANDROID_BRIDGE_NAME].postEvent === 'function');
+  }
+
+  function isInIframe() {
+    return !!(window.parent && window.parent !== window);
+  }
+
+  function sendEvent(eventName, payload) {
+    var message = {
+      type: eventName,
+      payload: payload || {},
+      timestamp: Date.now()
+    };
+
+    if (hasIOSBridge()) {
+      try {
+        window.webkit.messageHandlers[HANDLER_NAME].postMessage(message);
+      } catch (e) { /* ignore */ }
+      return;
+    }
+
+    if (hasAndroidBridge()) {
+    try {
+      var p = payload || {};
+      p.__secureToken = window.__fbAndroidBridgeAuthToken || '';
+      window[ANDROID_BRIDGE_NAME].postEvent(
+        eventName,
+        JSON.stringify(p)
+      );
+    } catch (e) { /* ignore */ }
+    return;
+  }
+
+    if (isInIframe()) {
+      try {
+        window.parent.postMessage(message, '*');
+      } catch (e) { /* ignore */ }
+      return;
+    }
+  }
+
+  // --- rAF Game-Ready Detection ---
+
+  function onFrame() {
+    if (gameReadySent) return;
+
+    frameCount++;
+    if (frameCount >= RAF_FRAME_THRESHOLD) {
+      gameReadySent = true;
+      sendEvent('game_ready', {
+        frame_count: frameCount,
+        detected_at: Date.now()
+      });
+      return;
+    }
+
+    originalRAF.call(window, onFrame);
+  }
+
+  if (originalRAF) {
+    window.requestAnimationFrame = function(callback) {
+      if (!gameReadySent) {
+        return originalRAF.call(window, function(timestamp) {
+          frameCount++;
+          if (frameCount >= RAF_FRAME_THRESHOLD && !gameReadySent) {
+            gameReadySent = true;
+            sendEvent('game_ready', {
+              frame_count: frameCount,
+              detected_at: Date.now()
+            });
+          }
+          callback(timestamp);
+        });
+      }
+      return originalRAF.call(window, callback);
+    };
+  }
+
+  // --- First User Interaction Detection ---
+
+  function setupFirstInteractionDetection() {
+    var events = ['touchstart', 'mousedown', 'keydown'];
+
+    function onFirstInteraction() {
+      if (firstInteractionSent) return;
+      firstInteractionSent = true;
+      sendEvent('user_interaction_start', null);
+
+      for (var i = 0; i < events.length; i++) {
+        document.removeEventListener(events[i], onFirstInteraction, true);
+      }
+    }
+
+    for (var i = 0; i < events.length; i++) {
+      document.addEventListener(events[i], onFirstInteraction, true);
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupFirstInteractionDetection);
+  } else {
+    setupFirstInteractionDetection();
+  }
+
+  // --- Auto Error Capture ---
+
+  window.addEventListener('error', function(event) {
+    if (errorSent) return;
+    errorSent = true;
+    sendEvent('error', {
+      message: event.message || 'Unknown error',
+      source: event.filename || '',
+      lineno: event.lineno || 0,
+      colno: event.colno || 0,
+      auto_captured: true
+    });
+  });
+
+  window.addEventListener('unhandledrejection', function(event) {
+    if (errorSent) return;
+    errorSent = true;
+    var reason = event.reason;
+    sendEvent('error', {
+      message: (reason instanceof Error) ? reason.message : String(reason),
+      type: 'unhandled_promise_rejection',
+      auto_captured: true
+    });
+  });
+
+  // --- Public API ---
+
+  window.playablesSDK = {
+    complete: function(score) {
+      sendEvent('game_ended', {
+        score: score,
+        completed: true
+      });
+    },
+
+    error: function(message) {
+      if (errorSent) return;
+      errorSent = true;
+      sendEvent('error', {
+        message: message || 'Unknown error',
+        auto_captured: false
+      });
+    },
+
+    sendEvent: function(eventName, payload) {
+      if (!eventName || typeof eventName !== 'string') return;
+      sendEvent(eventName, payload);
+    }
+  };
+
+  // Kick off rAF detection in case no game code calls rAF immediately
+  if (originalRAF) {
+    originalRAF.call(window, onFrame);
+  }
+})();</script>
+<script>window.Intl=window.Intl||{};Intl.t=function(s){return(Intl._locale&&Intl._locale[s])||s;};</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monetary Policy – UPSC Simplified</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = { darkMode: 'class' }
+  </script>
+  <style>
+    :root { color-scheme: light dark; }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      line-height: 1.7;
+      background: #FFFCF7;
+      color: #1e293b;
+      -webkit-font-smoothing: antialiased;
+    }
+    h1, h2, h3 { font-family: 'Fraunces', serif; letter-spacing: -0.02em; }
+    .dark body { background: #0B1220; color: #e2e8f0; }
+    .upsc { color: #d97706; font-weight: 600; }
+    .dark .upsc { color: #fbbf24; }
+    .card { transition: all 0.2s ease; }
+    .card:hover { transform: translateY(-2px); }
+    .flashcard { perspective: 1000px; cursor: pointer; height: 130px; }
+    .flash-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s; transform-style: preserve-3d; }
+    .flashcard.flipped .flash-inner { transform: rotateY(180deg); }
+    .flash-front, .flash-back {
+      position: absolute; inset: 0; backface-visibility: hidden;
+      display: flex; align-items: center; justify-content: center; text-align: center;
+      padding: 1rem; border-radius: 0.75rem; border: 1px solid;
+    }
+    .flash-front { background: white; border-color: #e7e5e4; font-weight: 600; }
+    .dark .flash-front { background: #1e293b; border-color: #334155; }
+    .flash-back { background: #eff6ff; border-color: #bfdbfe; transform: rotateY(180deg); font-size: 0.85rem; line-height: 1.4; }
+    .dark .flash-back { background: #10243e; border-color: #1e3a8a; }
+    .revise-mode .detail, .revise-mode .flash-back, .revise-mode .accordion-content, .revise-mode .corridor-info { display: none !important; }
+    .revise-mode .flashcard { pointer-events: none; opacity: 0.7; }
+    @media print {
+      nav, #controls, #themeToggle { display: none !important; }
+      body { background: white !important; color: black !important; }
+      .card, section { break-inside: avoid; box-shadow: none !important; border: 1px solid #ddd !important; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Sticky Nav -->
+  <nav class="sticky top-0 z-50 border-b border-stone-200/70 dark:border-slate-800 bg-[#FFFCF7]/80 dark:bg-[#0B1220]/80 backdrop-blur-lg">
+    <div class="max-w-[900px] mx-auto px-4">
+      <div class="flex items-center justify-between h-14">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded-lg bg-amber-500 flex items-center justify-center text-white font-bold text-sm">MP</div>
+          <span class="font-semibold hidden sm:block">UPSC Notes</span>
+        </div>
+        <div class="hidden md:flex items-center gap-5 text-sm font-medium text-slate-600 dark:text-slate-300">
+          <a href="#definition" class="hover:text-amber-600">Definition</a>
+          <a href="#objectives" class="hover:text-amber-600">Objectives</a>
+          <a href="#tools" class="hover:text-amber-600">Tools</a>
+          <a href="#framework" class="hover:text-amber-600">Framework</a>
+          <a href="#mains" class="hover:text-amber-600">Mains Angles</a>
+          <a href="#current" class="hover:text-amber-600">Current</a>
+        </div>
+        <button id="themeToggle" class="p-2 rounded-lg hover:bg-stone-200 dark:hover:bg-slate-800 transition">
+          <svg id="sunIcon" class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+          <svg id="moonIcon" class="w-5 h-5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-[900px] mx-auto px-4 py-8 md:py-12">
+    <!-- Header -->
+    <header class="text-center mb-12">
+      <h1 class="text-4xl md:text-5xl font-semibold tracking-tight text-slate-900 dark:text-white">Monetary Policy – UPSC Simplified</h1>
+      <p class="mt-3 text-lg text-slate-600 dark:text-slate-400">Not coaching notes. Just what UPSC asks.</p>
+      <div id="controls" class="mt-6 flex justify-center gap-3">
+        <button id="reviseBtn" class="px-4 py-2 bg-slate-900 text-white dark:bg-white dark:text-slate-900 rounded-lg text-sm font-medium hover:opacity-90 transition">Revise Mode</button>
+        <button id="printBtn" class="px-4 py-2 bg-amber-500 text-white rounded-lg text-sm font-medium hover:bg-amber-600 transition">Print PDF</button>
+      </div>
+    </header>
+
+    <!-- Definition -->
+    <section id="definition" class="mb-12 scroll-mt-20">
+      <div class="card bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 rounded-2xl p-6 md:p-8 shadow-sm">
+        <div class="flex items-start gap-3">
+          <div class="mt-1 w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center flex-shrink-0">•</div>
+          <p class="text-lg md:text-xl leading-relaxed text-slate-800 dark:text-slate-100">
+            <strong class="upsc">Monetary Policy</strong> is the policy through which the <strong class="upsc">Reserve Bank of India</strong> controls three things: how much money is in the economy, the cost of that money (interest rates), and how easily banks can provide credit to the public. <strong class="upsc">RBI</strong> handles this, not the government; government manages <strong class="upsc">Fiscal Policy</strong> through budgets and taxes.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Objectives -->
+    <section id="objectives" class="mb-14 scroll-mt-20">
+      <h2 class="text-2xl md:text-3xl font-semibold mb-6">Five Core Objectives</h2>
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div class="card bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800 rounded-xl p-5">
+          <div class="flex items-start gap-4">
+            <span class="text-2xl">🎯</span>
+            <div>
+              <h3 class="font-semibold text-lg">1. Price Stability</h3>
+              <p class="detail text-slate-600 dark:text-slate-400 mt-1">primary mandate under <span class="upsc">inflation targeting</span></p>
+            </div>
+          </div>
+        </div>
+        <div class="card bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800 rounded-xl p-5">
+          <div class="flex items-start gap-4">
+            <span class="text-2xl">📈</span>
+            <div>
+              <h3 class="font-semibold text-lg">2. Economic Growth</h3>
+              <p class="detail text-slate-600 dark:text-slate-400 mt-1">supporting investment and production</p>
+            </div>
+          </div>
+        </div>
+        <div class="card bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800 rounded-xl p-5">
+          <div class="flex items-start gap-4">
+            <span class="text-2xl">🛡️</span>
+            <div>
+              <h3 class="font-semibold text-lg">3. Financial Stability</h3>
+              <p class="detail text-slate-600 dark:text-slate-400 mt-1">prevent market crashes</p>
+            </div>
+          </div>
+        <div class="card bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800 rounded-xl p-5">
+          <div class="flex items-start gap-4">
+            <span class="text-2xl">💧</span>
+            <div>
+              <h3 class="font-semibold text-lg">4. Liquidity Management</h3>
+              <p class="detail text-slate-600 dark:text-slate-400 mt-1">handling day-to-day cash</p>
+            </div>
+          </div>
+        <div class="card bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800 rounded-xl p-5 sm:col-span-2">
+          <div class="flex items-start gap-4">
+            <span class="text-2xl">💱</span>
+            <div>
+              <h3 class="font-semibold text-lg">5. Exchange Rate Stability</h3>
+              <p class="detail text-slate-600 dark:text-slate-400 mt-1">smoothing excessive Rupee volatility, not fixing rate</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mt-6 bg-amber-50 dark:bg-amber-950/30 border-l-4 border-amber-500 p-4 rounded-r-xl">
+        <p class="font-medium"><span class="text-amber-700 dark:text-amber-400">Remember this line for Mains:</span> <span class="detail">Monetary Policy is RBI's tool to control inflation and support growth, but price stability legally comes first.</span></p>
+      </div>
+    </section>
+
+    <!-- Tools -->
+    <section id="tools" class="mb-14 scroll-mt-20">
+      <h2 class="text-2xl md:text-3xl font-semibold mb-2">Prelims Core – Tools</h2>
+      <p class="detail text-slate-600 dark:text-slate-400 mb-6">Click cards to flip. Rates as of April 2026.</p>
+      
+      <div class="grid md:grid-cols-2 gap-8">
+        <!-- Left: Policy Rates -->
+        <div>
+          <h3 class="font-semibold text-xl mb-4 flex items-center gap-2"><span class="w-2 h-6 bg-blue-600 rounded"></span>Policy Rates (LAF Corridor)</h3>
+          
+          <!-- Corridor Visual -->
+          <div class="bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800 rounded-xl p-5 mb-5">
+            <div class="relative h-[220px] flex items-center">
+              <div class="absolute left-8 top-0 bottom-0 w-1 bg-gradient-to-b from-rose-400 via-blue-500 to-emerald-500 rounded-full"></div>
+              <div class="w-full space-y-6 pl-16">
+                <div>
+                  <div class="flex items-center gap-3">
+                    <div class="w-3 h-3 rounded-full bg-rose-500 -ml-[55px] absolute"></div>
+                    <div>
+                      <p class="font-bold text-rose-600 dark:text-rose-400">MSF (ceiling) – 5.50%</p>
+                      <p class="corridor-info text-sm text-slate-600 dark:text-slate-400">emergency overnight borrowing</p>
+                    </div>
+                  </div>
+                <div>
+                  <div class="flex items-center gap-3">
+                    <div class="w-4 h-4 rounded-full bg-blue-600 -ml-[55.5px] absolute ring-4 ring-blue-200 dark:ring-blue-900"></div>
+                    <div>
+                      <p class="font-bold text-blue-600 dark:text-blue-400 text-lg">Repo Rate – 5.25%</p>
+                      <p class="corridor-info text-sm text-slate-600 dark:text-slate-400">stance Neutral</p>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <div class="flex items-center gap-3">
+                    <div class="w-3 h-3 rounded-full bg-emerald-500 -ml-[55px] absolute"></div>
+                    <div>
+                      <p class="font-bold text-emerald-600 dark:text-emerald-400">SDF (floor) – 5.00%</p>
+                      <p class="corridor-info text-sm text-slate-600 dark:text-slate-400">25 bps below Repo</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="corridor-info space-y-3 text-sm">
+            <p><strong class="upsc">Repo Rate:</strong> rate RBI lends short-term to banks against govt securities. Up = costly loans, inflation cools. Down = boost growth. Current: 5.25% (April 2026), stance Neutral.</p>
+            <p><strong class="upsc">SDF (floor):</strong> banks park excess without collateral. Current: 5.00% (25 bps below Repo)</p>
+            <p><strong class="upsc">MSF (ceiling):</strong> emergency overnight borrowing. Current: 5.50% (25 bps above Repo)</p>
+          </div>
+        </div>
+
+        <!-- Right: Quantity Tools -->
+        <div>
+          <h3 class="font-semibold text-xl mb-4 flex items-center gap-2"><span class="w-2 h-6 bg-amber-500 rounded"></span>Quantity Tools</h3>
+          <div class="bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800 rounded-xl p-5 space-y-4">
+            <div>
+              <p class="font-semibold">CRR – 4.5%</p>
+              <p class="detail text-sm text-slate-600 dark:text-slate-400">% deposits banks keep as cash with RBI, no interest paid. Current: 4.5%</p>
+            </div>
+            <div class="border-t border-stone-200 dark:border-slate-800 pt-4">
+              <p class="font-semibold">SLR – 18%</p>
+              <p class="detail text-sm text-slate-600 dark:text-slate-400">18% of deposits in safe assets like govt bonds</p>
+            </div>
+            <div class="border-t border-stone-200 dark:border-slate-800 pt-4">
+              <p class="font-semibold">OMO</p>
+              <p class="detail text-sm text-slate-600 dark:text-slate-400">RBI buying/selling bonds. Note: 2025 RBI used ₹1 lakh crore OMO purchase and $5 billion Rupee-swap</p>
+            </div>
+            <div class="border-t border-stone-200 dark:border-slate-800 pt-4">
+              <p class="font-semibold">Bank Rate – 5.50%</p>
+              <p class="detail text-sm text-slate-600 dark:text-slate-400">long-term, aligned with MSF at 5.50%</p>
+            </div>
+            <div class="border-t border-stone-200 dark:border-slate-800 pt-4">
+              <p class="font-semibold">Reverse Repo</p>
+              <p class="detail text-sm text-slate-600 dark:text-slate-400">largely replaced by SDF</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Flashcards -->
+      <div class="mt-8">
+        <h4 class="font-medium mb-3 text-slate-700 dark:text-slate-300">Quick Flashcards – Tap to revise</h4>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="flashcard"><div class="flash-inner"><div class="flash-front">Repo Rate</div><div class="flash-back">RBI lends to banks against G-Secs. <b>5.25%</b> - Up cools inflation, Down boosts growth</div></div></div>
+          <div class="flashcard"><div class="flash-inner"><div class="flash-front">SDF</div><div class="flash-back">Floor of corridor. Banks park excess, no collateral. <b>5.00%</b></div></div></div>
+          <div class="flashcard"><div class="flash-inner"><div class="flash-front">MSF</div><div class="flash-back">Ceiling. Emergency overnight. <b>5.50%</b> (25 bps above Repo)</div></div></div>
+          <div class="flashcard"><div class="flash-inner"><div class="flash-front">Bank Rate</div><div class="flash-back">Long-term rate, aligned with MSF. <b>5.50%</b></div></div></div>
+          <div class="flashcard"><div class="flash-inner"><div class="flash-front">CRR</div><div class="flash-back">Cash with RBI, no interest. <b>4.5%</b> of NDTL</div></div></div>
+          <div class="flashcard"><div class="flash-inner"><div class="flash-front">SLR</div><div class="flash-back">Safe assets like G-Secs. <b>18%</b> of deposits</div></div></div>
+          <div class="flashcard"><div class="flash-inner"><div class="flash-front">OMO</div><div class="flash-back">Buy/sell bonds to inject/absorb liquidity. 2025: ₹1L cr purchase</div></div></div>
+          <div class="flashcard"><div class="flash-inner"><div class="flash-front">Reverse Repo</div><div class="flash-back">Old absorption tool, now largely replaced by SDF</div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Framework -->
+    <section id="framework" class="mb-14 scroll-mt-20">
+      <h2 class="text-2xl md:text-3xl font-semibold mb-6">Decision Framework</h2>
+      <div class="grid md:grid-cols-2 gap-5">
+        <div class="card bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800 rounded-xl p-6">
+          <h3 class="font-semibold text-lg mb-2">Flexible Inflation Targeting</h3>
+          <p class="detail">Since 2016: target <strong class="upsc">4% CPI ±2%</strong> (2% to 6% band)</p>
+        </div>
+        <div class="card bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800 rounded-xl p-6">
+          <h3 class="font-semibold text-lg mb-2">MPC Structure</h3>
+          <p class="detail"><strong class="upsc">6 members</strong> – 3 from RBI (Governor as chair) + 3 external govt appointees. Each one vote, Governor casting vote on tie. Meets at least 4 times/year.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Mains -->
+    <section id="mains" class="mb-14 scroll-mt-20">
+      <h2 class="text-2xl md:text-3xl font-semibold mb-6">Mains Analysis – Trade-offs</h2>
+      <div class="space-y-3" id="accordion">
+        <!-- Item 1 -->
+        <div class="border border-stone-200 dark:border-slate-800 rounded-xl overflow-hidden bg-white dark:bg-slate-900">
+          <button class="accordion-btn w-full flex justify-between items-center p-5 text-left hover:bg-stone-50 dark:hover:bg-slate-800/50">
+            <span class="font-semibold">Growth vs Inflation</span>
+            <svg class="w-5 h-5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div class="accordion-content px-5 pb-5 detail text-slate-700 dark:text-slate-300">
+            cutting too fast spikes food inflation; high rates hurt jobs. Flexible targeting allows growth support within band.
+          </div>
+        <!-- Item 2 -->
+        <div class="border border-stone-200 dark:border-slate-800 rounded-xl overflow-hidden bg-white dark:bg-slate-900">
+          <button class="accordion-btn w-full flex justify-between items-center p-5 text-left hover:bg-stone-50 dark:hover:bg-slate-800/50">
+            <span class="font-semibold">Transmission</span>
+            <svg class="w-5 h-5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div class="accordion-content hidden px-5 pb-5 detail text-slate-700 dark:text-slate-300">
+            Repo cut fails if banks don't pass to consumers. EBLR linking helped, but slowed by deposit costs and small savings competition.
+          </div>
+        <!-- Item 3 -->
+        <div class="border border-stone-200 dark:border-slate-800 rounded-xl overflow-hidden bg-white dark:bg-slate-900">
+          <button class="accordion-btn w-full flex justify-between items-center p-5 text-left hover:bg-stone-50 dark:hover:bg-slate-800/50">
+            <span class="font-semibold">Liquidity vs Financial Stability</span>
+            <svg class="w-5 h-5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div class="accordion-content hidden px-5 pb-5 detail text-slate-700 dark:text-slate-300">
+            2025-26 inflation hit 77-month low of 2.1% in June 2025, food inflation negative, giving RBI Goldilocks space. Governor Sanjay Malhotra (took office late 2024) emphasized neutral liquidity.
+          </div>
+        </div>
+        <!-- Item 4 -->
+        <div class="border border-stone-200 dark:border-slate-800 rounded-xl overflow-hidden bg-white dark:bg-slate-900">
+          <button class="accordion-btn w-full flex justify-between items-center p-5 text-left hover:bg-stone-50 dark:hover:bg-slate-800/50">
+            <span class="font-semibold">Exchange Rate</span>
+            <svg class="w-5 h-5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div class="accordion-content hidden px-5 pb-5 detail text-slate-700 dark:text-slate-300">
+            Rupee near 90 per Dollar in 2025, RBI used Dollar-Rupee swaps instead of aggressive hikes.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Current Affairs -->
+    <section id="current" class="mb-14 scroll-mt-20">
+      <h2 class="text-2xl md:text-3xl font-semibold mb-4">Current Affairs 2025-26</h2>
+      <div class="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border border-amber-200 dark:border-amber-900 rounded-2xl p-6 md:p-8">
+        <ul class="space-y-3 detail">
+          <li class="flex gap-3"><span class="text-amber-600 mt-1">•</span><span>Repo held at <strong class="upsc">5.25%</strong> with Neutral stance through 2026</span></li>
+          <li class="flex gap-3"><span class="text-amber-600 mt-1">•</span><span>Inflation low of <strong class="upsc">2.1% in June 2025</strong>, full-year forecast around 3.1%</span></li>
+          <li class="flex gap-3"><span class="text-amber-600 mt-1">•</span><span>GDP Growth projected <strong class="upsc">6.5% to 7.3%</strong> for FY26</span></li>
+          <li class="flex gap-3"><span class="text-amber-600 mt-1">•</span><span>Governor Malhotra stressed support amid US-Iran tensions and trade tariff risks</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Final Tip -->
+    <section class="mb-12">
+      <div class="border border-dashed border-stone-300 dark:border-slate-700 rounded-xl p-6 text-center">
+        <p class="text-slate-700 dark:text-slate-300"><strong>Final Structure Tip:</strong> <span class="detail">"Start with RBI Act 2016 legal backing, move through tools and transmission challenges, conclude with current context."</span></p>
+      </div>
+    </section>
+
+    <!-- One liner -->
+    <section class="text-center py-10 border-t border-stone-200 dark:border-slate-800">
+      <blockquote class="text-2xl md:text-3xl font-medium leading-relaxed max-w-3xl mx-auto" style="font-family: 'Fraunces', serif;">
+        "The RBI cannot print growth; it can only create the stable price conditions for growth to happen."
+      </blockquote>
+    </section>
+
+    <footer class="text-center text-xs text-slate-500 dark:text-slate-500 pb-8">
+      Made for revision • UPSC Economy • April 2026 data
+    </footer>
+  </main>
+
+  <script>
+    // Theme toggle
+    const themeToggle = document.getElementById('themeToggle');
+    const html = document.documentElement;
+    if (localStorage.theme === 'dark' || (!localStorage.theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      html.classList.add('dark');
+    }
+    themeToggle.addEventListener('click', () => {
+      html.classList.toggle('dark');
+      localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+    });
+
+    // Flashcards
+    document.querySelectorAll('.flashcard').forEach(card => {
+      card.addEventListener('click', () => card.classList.toggle('flipped'));
+    });
+
+    // Accordion
+    document.querySelectorAll('.accordion-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const content = btn.nextElementSibling;
+        const icon = btn.querySelector('svg');
+        content.classList.toggle('hidden');
+        icon.classList.toggle('rotate-180');
+      });
+    });
+
+    // Revise mode
+    const reviseBtn = document.getElementById('reviseBtn');
+    reviseBtn.addEventListener('click', () => {
+      document.body.classList.toggle('revise-mode');
+      reviseBtn.textContent = document.body.classList.contains('revise-mode') ? 'Show Details' : 'Revise Mode';
+    });
+
+    // Print
+    document.getElementById('printBtn').addEventListener('click', () => window.print());
+  </script>
+</body>
+</html>
